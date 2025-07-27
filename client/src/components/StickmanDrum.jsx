@@ -1,0 +1,119 @@
+// src/components/StickmanGuitar.jsx
+import React, { useEffect } from "react";
+import { useRive, useStateMachineInput } from "@rive-app/react-canvas";
+import socket from '../services/socket';
+
+// ──────────────────────────────
+// 편집기에서 만든 이름들
+const STATE_MACHINE = "DrumAnimation";
+const RIGHT_HIT_TRIGGER  = "rightHitTrigger";   // Trigger (play)
+const HIT_TRIGGER  = "hitTrigger";   // Trigger (play)
+const ANOYING_TRIGGER  = "anoyingTrigger";   // Trigger (play)
+// ──────────────────────────────
+
+export default function StickmanGuitar({width, height}) {
+    
+  /* ① Rive 인스턴스 + Canvas ref */
+  const { rive, canvasRef, RiveComponent } = useRive({
+    src: "/animations/stickman_drum.riv",
+    stateMachines: STATE_MACHINE, // 임시로 주석처리
+    autoplay: true,
+    onStateChange: (event) => {
+      console.log("Rive state changed:", event);
+    },
+    onError: (error) => {
+      console.error("Rive loading error:", error);
+    },
+  });
+
+  /* ② Trigger 핸들 얻기 */
+  const rightHitTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    RIGHT_HIT_TRIGGER
+  );
+  const hitTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    HIT_TRIGGER
+  );
+  const anoyingTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    ANOYING_TRIGGER
+  );
+  useEffect(()=>{
+    socket.on('HITfromSERVER',(data)=>{
+        console.log('HITfromSERVER',data);
+        if(data.key === 'a'){
+            rightHitTrigger.fire();
+        }
+        if(data.key === 's'){
+            hitTrigger.fire();
+        }
+    });
+    socket.on('ACCURACYfromSERVER',(data)=>{
+        console.log('ACCURACYfromSERVER',data);
+    });
+  },[]);
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      {/* ④ Rive 캔버스 (사이즈는 아트보드 비율 기준) */}
+      {RiveComponent && (
+        <RiveComponent 
+          style={{ 
+            width: width, 
+            height: height, 
+            border: '1px solid red' 
+          }} 
+        />
+      )}
+      {!RiveComponent && (
+        <div style={{ 
+          width: 400, 
+          height: 650, 
+          border: '1px solid red',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f0f0f0'
+        }}>
+          Rive 컴포넌트 로딩 중...
+        </div>
+      )}
+
+      {/* ⑤ Trigger 버튼 */}
+      <button
+        onClick={() => {
+          if (rightHitTrigger) {
+            rightHitTrigger.fire();
+          }
+        }}
+        style={{ marginTop: 12 }}
+      >
+        rightHitTrigger
+      </button>
+      <button
+        onClick={() => {
+          if (hitTrigger) {
+            hitTrigger.fire();
+          }
+        }}
+        style={{ marginTop: 12 }}
+      >
+        hitTrigger
+      </button>
+      <button
+        onClick={() => {
+          if (anoyingTrigger) {
+            anoyingTrigger.fire();
+          }
+        }}
+        style={{ marginTop: 12 }}
+      >
+        anoyingTrigger
+      </button>
+    </div>
+  );
+}

@@ -1,11 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 
-export default function StartPage({ setSocket }) {
+export default function StartPage() {
   const navigate = useNavigate();
   const handleStart = () => {
-    const socket = io('http://localhost:3001');
-    setSocket(socket);
     navigate('/nickname');
   };
   return (

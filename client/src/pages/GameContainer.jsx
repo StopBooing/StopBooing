@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import GameScene from '../scenes/GameScene';
 import socket from '../services/socket';
-
+import StickmanDrum from '../components/StickmanDrum';
+import StickmanGuitar from '../components/StickmanGuitar';
+import StickmanVocal from '../components/StickmanVocal';
 const TOTAL_TIME = 120; // 전체 시간(초)
 
 export default function GameContainer({ nickname, song, session }) {
@@ -80,7 +82,13 @@ export default function GameContainer({ nickname, song, session }) {
           <button title="설정" style={{ fontSize: 22 }}>⚙️</button>
         </div>
       </div>
-      <div ref={phaserRef} style={{ width: '100vw', height: '90vh', overflow: 'hidden' }} />
+      <div ref={phaserRef} style={{ width: '100vw', height: '30vh', overflow: 'hidden' }} />
+      <div style={{ display: 'flex', justifyContent: 'center',  flexDirection: 'row'}}>
+        <StickmanGuitar width={200} height={300} />
+        <StickmanDrum width={200} height={200} />
+        <StickmanGuitar width={200} height={300} />
+        <StickmanVocal width={200} height={300} />
+      </div>
     </div>
   );
 } 

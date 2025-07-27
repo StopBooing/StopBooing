@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-
+import socket from '../services/socket';
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
@@ -27,27 +27,20 @@ export default class GameScene extends Phaser.Scene {
         rythmAreaHeight,
         0x00ff00
     ).setOrigin(0, 0);
-    this.add.rectangle(
-        0,
-        characterAreaY,
-        width,
-        characterAreaHeight,
-        0x0000ff
-    ).setOrigin(0, 0);
-    this.add.rectangle(
-        width/2,
-        characterAreaY+100,
-        200,
-        200,
-        0xff0000
-    );
-    this.add.rectangle(
-        width/2,
-        characterAreaY+300,
-        200,
-        300,
-        0xa00000
-    );
+    
+
+    this.input.keyboard.on('keydown',(event)=>{
+        socket.emit('HITfromCLIENT',{key: event.key, code: event.code, time :Date.now()})
+    });
+    this.input.keyboard.on('keydown-1',(event)=>{
+        socket.emit('ACCURACYfromCLIENT',{key: event.key, code: event.code, time :Date.now()})
+    });
+    
+
+
+    socket.on('HITfromSERVER',(data)=>{
+        console.log('HITfromSERVER',data);
+    });
     // 초기화: 아무것도 그리지 않음
   }
 

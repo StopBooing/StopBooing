@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5174', credentials: true }));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -72,6 +72,13 @@ io.on('connection', (socket) => {
       io.emit('song_selected', selectedSongId);
       votes = {}; // 투표 초기화
     }
+  });
+  socket.on('HITfromCLIENT',(data)=>{
+    console.log('HITfromCLIENT',data);
+    io.emit('HITfromSERVER',{...data, socketId:socket.id}); // : 누가 보냈는지를 보내야함.
+  });
+  socket.on('ACCURACYfromCLIENT',(data)=>{
+    console.log('ACCURACYfromCLIENT',data);
   });
 
   socket.on('disconnect', () => {

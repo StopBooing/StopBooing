@@ -6,6 +6,7 @@ import SongSelect from './pages/SongSelect';
 import SessionSelect from './pages/SessionSelect';
 import GameContainer from './pages/GameContainer';
 import Result from './pages/Result';
+import Stickman from './pages/Stickman';
 
 export default function App() {
   const [nickname, setNickname] = useState('');
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/session" element={<SessionSelect setSession={setSession} />} />
         <Route path="/game" element={<GameContainer nickname={nickname} song={song} session={session} />} />
         <Route path="/result" element={<Result />} />
+        <Route path="/stickman" element={<Stickman />} />
       </Routes>
     </Router>
   );
