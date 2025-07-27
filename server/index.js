@@ -1,7 +1,7 @@
-// index.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -80,6 +80,14 @@ io.on('connection', (socket) => {
   socket.on('ACCURACYfromCLIENT',(data)=>{
     console.log('ACCURACYfromCLIENT',data);
   });
+  socket.on('keyPress', (data) => {
+    console.log(`사용자 ${socket.id}가 키를 눌렀습니다: ${data.key}`);
+
+    // 중요: 'playerKeyPress' 이벤트를 자신을 제외한 모든 연결된 클라이언트에게 전송
+    // socket.broadcast.emit()을 사용하면 이 이벤트를 보낸 클라이언트(자기 자신)를 제외하고 보냅니다.
+    io.emit('playerKeyPress', { playerId: socket.id, key: data.key }); // 모든 클라이언트에게 전송 (자신 포함)
+    // 또는: socket.broadcast.emit('playerKeyPress', { playerId: socket.id, key: data.key }); // 자신 제외하고 전송
+  });
 
   socket.on('disconnect', () => {
     users = users.filter(u => u.id !== socket.id);
@@ -90,4 +98,9 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Socket.io 서버가 ${PORT}번 포트에서 실행 중`);
+
+});
+
+server.listen(PORT, () => {
+  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
 });
