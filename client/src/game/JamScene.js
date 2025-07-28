@@ -544,6 +544,23 @@ export default class JamScene extends Phaser.Scene {
     
     this.totalScore += score;
   }
+
+  getKeyIdentifier(event) {
+    const key = event.key;
+
+    // 모디파이어 키 자체의 입력을 무시합니다.
+    if (['Alt', 'Meta', 'CapsLock'].includes(key)) {
+      return null;
+    }
+
+    // CapsLock 상태를 처리합니다.
+    if (event.getModifierState && event.getModifierState('CapsLock')) {
+      return `capslock+${key.toLowerCase()}`;
+    }
+
+    // 일반 키는 event.key를 그대로 사용합니다.
+    return key;
+  }
   
   update(time, delta) {
     if (Tone.Transport.state !== 'started') return;
