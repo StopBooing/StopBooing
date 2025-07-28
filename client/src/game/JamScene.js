@@ -45,7 +45,7 @@ export default class JamScene extends Phaser.Scene {
     this.socket = this.sys.game.registry.get('socket');
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
   }
-
+  
   create() {
     this.cameras.main.setBackgroundColor('#2d2d2d');
     this.myInstrumentName = this.game.registry.get('myInstrument');
@@ -147,6 +147,9 @@ export default class JamScene extends Phaser.Scene {
     this.add.line(0, 0, this.HIT_LINE_X, this.RHYTHM_GAME_TOP, this.HIT_LINE_X, this.RHYTHM_GAME_BOTTOM, 0xffffff, 3).setOrigin(0);
 
     this.noteVisualsGroup = this.add.group();
+
+    // 레인별 키 매핑은 SongManager에서 가져온 것을 사용
+    // this.keyLanes는 create() 메서드에서 설정됨
 
     // === 3개의 보조선(가로선) 추가 (블럭 사이의 경계) ===
     const guideLineYPositions = [this.guideLine1Y, this.guideLine2Y, this.guideLine3Y];
@@ -359,6 +362,9 @@ export default class JamScene extends Phaser.Scene {
           const accuracy = hitNoteBlock.judgeAccuracy(now);
           hitNoteBlock.hit(now, accuracy);
           
+          // 탭 블럭 홀드 오버 체크 시작
+          hitNoteBlock.startTapHold(now);
+          
           // 악기 연주
           const notes = hitNoteBlock.note.split(',');
           this.activeInstrument.handleAttack(notes);
@@ -400,9 +406,10 @@ export default class JamScene extends Phaser.Scene {
       // 키를 떼면 해당 소리를 멈춥니다.
       const pressedData = this.pressedKeys[code];
       if (pressedData && this.activeInstrument) {
+        const now = Tone.now();
+        
         // 홀드 블럭인 경우 홀드 종료 처리
         if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'hold') {
-          const now = Tone.now();
           pressedData.noteBlock.endHold(now);
           
           // 홀드 완료도에 따른 점수 및 콤보 업데이트
@@ -414,6 +421,18 @@ export default class JamScene extends Phaser.Scene {
           this.showAccuracyText(holdMessage, pressedData.noteBlock.lane);
           
           console.log(`Hold Block ended: ${pressedData.noteBlock.toString()}, Progress: ${Math.round(pressedData.noteBlock.holdProgress * 100)}%, Score: ${pressedData.noteBlock.score}`);
+        }
+        
+        // 탭 블럭인 경우 홀드 오버 체크
+        if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'tap') {
+          pressedData.noteBlock.endTapHold(now);
+          
+          // 홀드 오버가 발생했다면 점수 및 콤보 재계산
+          if (pressedData.noteBlock.isTapHoldOver) {
+            this.updateComboAndScore(pressedData.noteBlock.accuracy);
+            this.showAccuracyText('HOLD OVER', pressedData.noteBlock.lane);
+            console.log(`Tap Block hold over: ${pressedData.noteBlock.toString()}, Score: ${pressedData.noteBlock.score}`);
+          }
         }
         
         this.activeInstrument.handleRelease(pressedData.chord);
@@ -544,6 +563,23 @@ export default class JamScene extends Phaser.Scene {
     
     this.totalScore += score;
   }
+
+  getKeyIdentifier(event) {
+    const key = event.key;
+
+    // 모디파이어 키 자체의 입력을 무시합니다.
+    if (['Alt', 'Meta', 'CapsLock'].includes(key)) {
+      return null;
+    }
+
+    // CapsLock 상태를 처리합니다.
+    if (event.getModifierState && event.getModifierState('CapsLock')) {
+      return `capslock+${key.toLowerCase()}`;
+    }
+
+    // 일반 키는 event.key를 그대로 사용합니다.
+    return key;
+  }
   
   update(time, delta) {
     if (Tone.Transport.state !== 'started') return;
@@ -573,6 +609,33 @@ export default class JamScene extends Phaser.Scene {
             } else {
               mainBlock.setFillStyle(0xff8800); // 시작 시 주황색
             }
+          }
+        }
+      }
+      
+      // 탭 블럭 홀드 오버 실시간 체크 및 시각적 피드백
+      if (noteBlock.blockType === 'tap' && noteBlock.isHit && !noteBlock.isTapHoldOver) {
+        const holdOverOccurred = noteBlock.checkTapHoldOver(now);
+        if (holdOverOccurred) {
+          // 홀드 오버 발생 시 즉시 점수 및 콤보 재계산
+          this.updateComboAndScore(noteBlock.accuracy);
+          this.showAccuracyText('HOLD OVER', noteBlock.lane);
+          console.log(`Tap Block hold over detected: ${noteBlock.toString()}, Score: ${noteBlock.score}`);
+          
+          // 홀드 오버 시 블럭 색상을 빨간색으로 변경 (시각적 피드백)
+          if (noteBlock.visualObject && noteBlock.visualObject.setFillStyle) {
+            noteBlock.visualObject.setFillStyle(0xff0000); // 빨간색으로 변경
+          }
+        }
+      }
+      
+      // 탭 블럭 홀드 오버 경고 (0.2초 이상 누르면 노란색으로 경고)
+      if (noteBlock.blockType === 'tap' && noteBlock.isHit && !noteBlock.isTapHoldOver && noteBlock.tapHoldStartTime) {
+        const holdTime = now - noteBlock.tapHoldStartTime;
+        if (holdTime > 0.2 && holdTime <= noteBlock.maxTapHoldTime) {
+          // 경고 단계: 노란색으로 변경
+          if (noteBlock.visualObject && noteBlock.visualObject.setFillStyle) {
+            noteBlock.visualObject.setFillStyle(0xffff00); // 노란색 경고
           }
         }
       }

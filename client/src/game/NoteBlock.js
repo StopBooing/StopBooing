@@ -40,6 +40,11 @@ export default class NoteBlock {
     this.holdEndTime = null; // 홀드 종료 시간
     this.holdProgress = 0; // 홀드 진행률 (0~1)
     
+    // 탭 블럭 홀드 오버 관련 상태
+    this.isTapHoldOver = false; // 탭 블럭을 너무 오래 누르고 있는지 여부
+    this.tapHoldStartTime = null; // 탭 블럭 홀드 시작 시간
+    this.maxTapHoldTime = 0.3; // 탭 블럭 최대 홀드 시간 (초)
+    
     // 생성 시간 기록
     this.createdAt = Date.now();
     
@@ -92,6 +97,47 @@ export default class NoteBlock {
     if (this.blockType === 'hold' && this.isHolding && this.holdStartTime) {
       const elapsed = currentTime - this.holdStartTime;
       this.holdProgress = Math.min(1, elapsed / this.duration);
+    }
+  }
+
+  // 탭 블럭 홀드 오버 시작
+  startTapHold(hitTime) {
+    if (this.blockType === 'tap' && !this.isTapHoldOver) {
+      this.tapHoldStartTime = hitTime;
+    }
+  }
+
+  // 탭 블럭 홀드 오버 체크
+  checkTapHoldOver(currentTime) {
+    if (this.blockType === 'tap' && this.tapHoldStartTime && !this.isTapHoldOver) {
+      const holdTime = currentTime - this.tapHoldStartTime;
+      if (holdTime > this.maxTapHoldTime) {
+        this.isTapHoldOver = true;
+        // 홀드 오버 시 정확도를 'bad'로 변경하고 점수 감점
+        this.accuracy = 'bad';
+        this.calculateScore();
+        return true; // 홀드 오버 발생
+      }
+    }
+    return false; // 홀드 오버 없음
+  }
+
+  // 탭 블럭 홀드 종료
+  endTapHold(endTime) {
+    if (this.blockType === 'tap' && this.tapHoldStartTime) {
+      const holdTime = endTime - this.tapHoldStartTime;
+      
+      // 홀드 오버가 발생했는지 확인
+      if (holdTime > this.maxTapHoldTime) {
+        this.isTapHoldOver = true;
+        // 홀드 오버 시 정확도를 'bad'로 변경
+        if (this.accuracy === 'perfect' || this.accuracy === 'good') {
+          this.accuracy = 'bad';
+          this.calculateScore();
+        }
+      }
+      
+      this.tapHoldStartTime = null;
     }
   }
 
