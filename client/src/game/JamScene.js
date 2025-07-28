@@ -592,7 +592,7 @@ export default class JamScene extends Phaser.Scene {
           this.handleMissedNote(noteBlock, now);
         }
       } else if (timeToHit < -0.1) {
-        // 기준선을 지나간 노트는 제거
+        // 기준선을 지나간 노트는 제거3
         if (!noteBlock.isHit) {
           this.handleMissedNote(noteBlock, now);
         }

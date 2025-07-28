@@ -18,7 +18,8 @@ const io = new Server(server, {
 
 const PORT = 3001;
 
-let users = []; // { id: socket.id, nickname: '닉네임' }
+let users = []; // { id: socket.id, nickname: '닉네임', instrument: '악기명' }
+let selectedInstruments = {}; // { instrument: socket.id } - 어떤 악기가 누구에게 선택되었는지
 
 app.use(express.json());
 
@@ -53,6 +54,68 @@ io.on('connection', (socket) => {
       console.log('닉네임 이미 사용중, nickname : ', nickname);
     }
   });
+
+  // 악기 선택 이벤트
+  socket.on('select_instrument', (instrument) => {
+    console.log(`사용자 ${socket.id}가 악기 ${instrument}를 선택했습니다.`);
+    
+    // 이미 선택된 악기인지 확인
+    if (selectedInstruments[instrument]) {
+      socket.emit('instrument_already_taken', instrument);
+      console.log(`악기 ${instrument}는 이미 선택되었습니다.`);
+      return;
+    }
+    
+    // 이전에 선택한 악기가 있다면 해제
+    const previousInstrument = Object.keys(selectedInstruments).find(key => selectedInstruments[key] === socket.id);
+    if (previousInstrument) {
+      delete selectedInstruments[previousInstrument];
+      console.log(`이전 악기 ${previousInstrument} 선택 해제`);
+    }
+    
+    // 새 악기 선택
+    selectedInstruments[instrument] = socket.id;
+    
+    // 유저 정보 업데이트
+    const userIndex = users.findIndex(u => u.id === socket.id);
+    if (userIndex !== -1) {
+      users[userIndex].instrument = instrument;
+    }
+    
+    // 모든 클라이언트에게 악기 선택 상태 브로드캐스트
+    io.emit('instrument_selected', {
+      playerId: socket.id,
+      instrument: instrument,
+      selectedInstruments: selectedInstruments
+    });
+    
+    console.log('현재 선택된 악기들:', selectedInstruments);
+  });
+
+  // 악기 선택 해제 이벤트
+  socket.on('deselect_instrument', (instrument) => {
+    console.log(`사용자 ${socket.id}가 악기 ${instrument} 선택을 해제했습니다.`);
+    
+    if (selectedInstruments[instrument] === socket.id) {
+      delete selectedInstruments[instrument];
+      
+      // 유저 정보에서 악기 제거
+      const userIndex = users.findIndex(u => u.id === socket.id);
+      if (userIndex !== -1) {
+        delete users[userIndex].instrument;
+      }
+      
+      // 모든 클라이언트에게 악기 선택 해제 브로드캐스트
+      io.emit('instrument_deselected', {
+        playerId: socket.id,
+        instrument: instrument,
+        selectedInstruments: selectedInstruments
+      });
+      
+      console.log('현재 선택된 악기들:', selectedInstruments);
+    }
+  });
+
   socket.on('ready', () => {
     io.emit('game_start', users);
     console.log('게임 시작!');
@@ -73,13 +136,16 @@ io.on('connection', (socket) => {
       votes = {}; // 투표 초기화
     }
   });
+
   socket.on('HITfromCLIENT',(data)=>{
     console.log('HITfromCLIENT',data);
     io.emit('HITfromSERVER',{...data, socketId:socket.id}); // : 누가 보냈는지를 보내야함.
   });
+
   socket.on('ACCURACYfromCLIENT',(data)=>{
     console.log('ACCURACYfromCLIENT',data);
   });
+
   socket.on('keyPress', (data) => {
     console.log(`사용자 ${socket.id}가 키를 눌렀습니다: ${data.key}`);
 
@@ -90,6 +156,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    // 연결 해제 시 선택한 악기도 해제
+    const selectedInstrument = Object.keys(selectedInstruments).find(key => selectedInstruments[key] === socket.id);
+    if (selectedInstrument) {
+      delete selectedInstruments[selectedInstrument];
+      io.emit('instrument_deselected', {
+        playerId: socket.id,
+        instrument: selectedInstrument,
+        selectedInstruments: selectedInstruments
+      });
+    }
+    
     users = users.filter(u => u.id !== socket.id);
     delete votes[socket.id];
     console.log('클라이언트 연결 해제:', socket.id);
@@ -98,5 +175,4 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Socket.io 서버가 ${PORT}번 포트에서 실행 중`);
-
 });
