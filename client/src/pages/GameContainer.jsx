@@ -17,7 +17,7 @@ export default function GameContainer({ nickname, song, session }) {
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth,
-      height: window.innerHeight, // 30%만 사용!
+      height: window.innerHeight * 0.4, // 30%만 사용!
       parent: phaserRef.current,
       scene: [JamScene],
       physics: {
@@ -32,7 +32,7 @@ export default function GameContainer({ nickname, song, session }) {
 
     const handleResize = () => {
       if (game && game.scale) {
-        game.scale.resize(window.innerWidth, window.innerHeight * 0.3);
+        game.scale.resize(window.innerWidth, window.innerHeight * 0.4);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -84,12 +84,12 @@ export default function GameContainer({ nickname, song, session }) {
           <button title="설정" style={{ fontSize: 22 }}>⚙️</button>
         </div>
       </div>
-      <div ref={phaserRef} style={{ width: '100vw', height: '80vh',overflow: 'hidden' }} />
-      <div style={{ display: 'flex', justifyContent: 'center',  flexDirection: 'row'}}>
-        <StickmanGuitar width={200} height={300} />
+      <div ref={phaserRef} style={{ width: '100vw', height: '40vh',overflow: 'hidden' }} />
+      <div style={{ display: 'flex', justifyContent: 'center',  flexDirection: 'row', width: '100vw', height: '50vh'}}>
+        <StickmanGuitar width={200} height={200} />
         <StickmanDrum width={200} height={200} />
-        <StickmanVocal width={200} height={300} />
-        <StickmanPiano width={200} height={300} />
+        <StickmanVocal width={200} height={200} />
+        <StickmanPiano width={200} height={200} />
       </div>
     </div>
   );
