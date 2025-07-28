@@ -100,7 +100,3 @@ server.listen(PORT, () => {
   console.log(`Socket.io 서버가 ${PORT}번 포트에서 실행 중`);
 
 });
-
-server.listen(PORT, () => {
-  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
-});

@@ -29,10 +29,10 @@ export default function StickmanGuitar({width, height}) {
     TRIGGER_NAME
   );
 
-  // 디버깅용 로그
-  console.log("Rive instance:", rive);
-  console.log("Canvas ref:", canvasRef);
-  console.log("Play trigger:", playTrigger);
+//   // 디버깅용 로그
+//   console.log("Rive instance:", rive);
+//   console.log("Canvas ref:", canvasRef);
+//   console.log("Play trigger:", playTrigger);
 
   return (
     <div style={{ textAlign: "center" }}>

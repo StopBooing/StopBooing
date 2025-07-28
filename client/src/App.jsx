@@ -17,7 +17,7 @@ export default function App() {
   const [nickname, setNickname] = useState('');
   const [song, setSong] = useState('');
   const [session, setSession] = useState('');
-  const [selectedInstrument, setSelectedInstrument] = useState(null);
+  const [selectedInstrument, setSelectedInstrument] = useState("keyboard");
   const handleInstrumentSelect = async (instrumentId) => {
     if (Tone.context.state !== 'running') {
       await Tone.start();
@@ -25,6 +25,7 @@ export default function App() {
     }
     console.log(`App: ${instrumentId}가 선택되었습니다. 게임을 시작합니다.`);
     setSelectedInstrument(instrumentId);
+    console.log(selectedInstrument);
   };
 
   return (

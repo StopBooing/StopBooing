@@ -200,26 +200,38 @@ export default class JamScene extends Phaser.Scene {
     this.SPAWN_X = this.cameras.main.width - 100; // 노트 생성 위치 (화면 오른쪽)
     this.noteSpeed = 0;
 
-    // 기준선 (수직선) 생성
-    this.add.line(0, 0, this.HIT_LINE_X, 100, this.HIT_LINE_X, this.cameras.main.height - 100, 0xffffff, 3).setOrigin(0);
+    // 기준선 (수직선) 생성 - y좌표를 0부터 시작하도록 조정
+    this.add.line(0, 0, this.HIT_LINE_X, 0, this.HIT_LINE_X, this.cameras.main.height, 0xffffff, 3).setOrigin(0);
 
     this.noteVisualsGroup = this.add.group();
 
     // 키별 Y축 위치 매핑 (각 키마다 다른 레인)
     this.keyLanes = {
       // 피아노 키들
-      '8': 200, '9': 260, '0': 320, '7': 140,
-      '*': 200, '(': 260, ')': 320, '&': 140, '^': 80,
-      
+      '8': 80, '9': 110, '0': 140, '7': 50,
+      '*': 80, '(': 110, ')': 140, '&': 50, '^': 170,
+      'shift+0':140,
+      'shift+7': 50,
+      'shift+6': 20,
       // 일렉기타 키들
-      '1': 150,
-      '2': 200,
-      '3': 250,
-      '4': 300,
-      'r': 350,
-      'e': 400,
-      't': 450,
+      // '1': 50,
+      // '2': 110,
+      // '3': 170,
+      // '4': 230,
+      // 'r': 290,
+      // 'e': 350,
+      // 't': 410,
     };
+
+    // === 보조선(가로선) 추가 ===
+    const laneYSet = new Set(Object.values(this.keyLanes));
+    laneYSet.forEach(y => {
+      this.add.line(
+        0, 0,
+        this.HIT_LINE_X, y, this.SPAWN_X, y,
+        0xcccccc, 0.5 // 연한 회색, 반투명
+      ).setOrigin(0);
+    });
   }
 
   startSongTracker() {
@@ -229,7 +241,6 @@ export default class JamScene extends Phaser.Scene {
     Tone.Transport.cancel(0);
 
     this.currentBar = 0;
-    this.barText = this.add.text(40, 40, `마디: ${this.currentBar + 1}`, { fontSize: '32px', color: '#ffffff' });
     this.createProgressBar();
 
     const bpm = 84;
@@ -292,7 +303,7 @@ export default class JamScene extends Phaser.Scene {
     const yPos = this.keyLanes[note.key] || this.cameras.main.height / 2;
 
     // 노트 블록 생성 (가로로 긴 형태)
-    const noteBlock = this.add.rectangle(0, 0, 100, 40, 0x00ff00).setOrigin(0.5);
+    const noteBlock = this.add.rectangle(0, 0, 100, 20, 0x00ff00).setOrigin(0.5);
     const keyText = this.add.text(0, 0, note.key.toUpperCase(), {
       fontSize: '18px',
       color: '#000000',
@@ -332,7 +343,7 @@ export default class JamScene extends Phaser.Scene {
     this.progressBarWidth = 300;
     this.progressBarHeight = 20;
     this.progressBarX = (this.sys.game.config.width - this.progressBarWidth) / 2;
-    this.progressBarY = this.barText.y + this.barText.height + 20;
+    this.progressBarY = 20; // 화면 상단에 붙이기 위해 y좌표를 20으로 조정
 
     this.progressBarBg = this.add.graphics();
     this.progressBarBg.fillStyle(0x555555, 1);

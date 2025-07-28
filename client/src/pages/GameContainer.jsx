@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
-import GameScene from '../scenes/GameScene';
+import JamScene from '../game/JamScene';
 import socket from '../services/socket';
 import StickmanDrum from '../components/StickmanDrum';
 import StickmanGuitar from '../components/StickmanGuitar';
@@ -16,21 +16,22 @@ export default function GameContainer({ nickname, song, session }) {
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth,
-      height: window.innerHeight,
+      height: window.innerHeight, // 30%만 사용!
       parent: phaserRef.current,
-      scene: [GameScene],
+      scene: [JamScene],
       physics: {
         default: 'arcade',
         arcade: { debug: false },
       },
-      backgroundColor: '#222',
+      backgroundColor: '#000000',
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
+    game.registry.set('myInstrument', 'keyboard');
 
     const handleResize = () => {
       if (game && game.scale) {
-        game.scale.resize(window.innerWidth, window.innerHeight * 0.9);
+        game.scale.resize(window.innerWidth, window.innerHeight * 0.3);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -82,7 +83,7 @@ export default function GameContainer({ nickname, song, session }) {
           <button title="설정" style={{ fontSize: 22 }}>⚙️</button>
         </div>
       </div>
-      <div ref={phaserRef} style={{ width: '100vw', height: '30vh', overflow: 'hidden' }} />
+      <div ref={phaserRef} style={{ width: '100vw', height: '80vh',overflow: 'hidden' }} />
       <div style={{ display: 'flex', justifyContent: 'center',  flexDirection: 'row'}}>
         <StickmanGuitar width={200} height={300} />
         <StickmanDrum width={200} height={200} />
