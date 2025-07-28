@@ -14,6 +14,7 @@ export default function GameContainer({ nickname, song, session }) {
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
 
   useEffect(() => {
+    
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth,
