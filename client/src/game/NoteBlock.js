@@ -2,7 +2,7 @@ export default class NoteBlock {
   constructor({
     note,           // 음 (예: 'C4', 'E4', 'G4')
     timing,         // 나올 타이밍 (초 단위)
-    duration = 0.5, // 길이 (초 단위, 기본값 0.5초)
+    duration = 0.3, // 길이 (초 단위, 기본값 0.5초)
     lane,           // 레인 번호 (1-4)
     key,            // 입력 키 (예: '8', '9', '0')
     bar,            // 마디 번호
