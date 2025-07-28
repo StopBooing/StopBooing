@@ -25,6 +25,9 @@ export default class Piano {
     const noteBlocks = [];
     const laneKeys = this.getLaneKeys();
     
+    // 모든 음의 타이밍을 배열로 정의
+    const allNotes = [];
+    
     // 마디 1-4: 기본 패턴
     for (let bar = 1; bar <= 4; bar++) {
       const lane = bar % 2 === 1 ? 1 : 2;
@@ -32,15 +35,14 @@ export default class Piano {
       
       for (let beat = 1; beat <= 4; beat++) {
         const timing = (bar - 1) * 4 + beat;
-        noteBlocks.push(new NoteBlock({
+        allNotes.push({
           note: notes.join(','),
           timing: timing,
-          duration: 0.5,
           lane: lane,
           key: laneKeys[lane],
           bar: bar,
           beat: beat
-        }));
+        });
       }
     }
     
@@ -77,16 +79,51 @@ export default class Piano {
     ];
     
     complexPattern.forEach(pattern => {
-      noteBlocks.push(new NoteBlock({
+      allNotes.push({
         note: pattern.notes.join(','),
         timing: pattern.time,
-        duration: 0.5,
         lane: pattern.lane,
         key: laneKeys[pattern.lane],
         bar: 5 + Math.floor((pattern.time - 17) / 4),
         beat: pattern.beat
-      }));
+      });
     });
+    
+    // 모든 음을 타이밍 순으로 정렬
+    allNotes.sort((a, b) => a.timing - b.timing);
+    
+    // 각 음의 duration을 다음 음과의 시간 차이로 계산
+    const durationMultiplier = 0.3; // 블럭 길이 배수 (0.3 = 30%로 줄임)
+    
+    for (let i = 0; i < allNotes.length; i++) {
+      const currentNote = allNotes[i];
+      let duration;
+      
+      if (i === allNotes.length - 1) {
+        // 마지막 음은 기본 길이
+        duration = 0.5; // 기본 길이도 줄임
+      } else {
+        // 다음 음과의 시간 차이를 duration으로 설정 (배수 적용)
+        const nextNote = allNotes[i + 1];
+        const timeDiff = nextNote.timing - currentNote.timing;
+        duration = timeDiff * durationMultiplier;
+        
+        // 최소 길이 보장 (너무 짧으면 기본값 사용)
+        if (duration < 0.05) {
+          duration = 0.3;
+        }
+      }
+      
+      noteBlocks.push(new NoteBlock({
+        note: currentNote.note,
+        timing: currentNote.timing,
+        duration: duration,
+        lane: currentNote.lane,
+        key: currentNote.key,
+        bar: currentNote.bar,
+        beat: currentNote.beat
+      }));
+    }
     
     return noteBlocks;
   }
@@ -106,7 +143,7 @@ export default class Piano {
         noteBlocks.push(new NoteBlock({
           note: notes.join(','),
           timing: timing,
-          duration: 0.5,
+          duration: 0.3, // 기본 길이 줄임
           lane: lane,
           key: laneKeys[lane],
           bar: bar,
