@@ -3,133 +3,10 @@ import * as Tone from 'tone';
 import Piano from '../instruments/Piano.js';
 import ElectricGuitar from '../instruments/ElectricGuitar.js';
 import NoteBlock from './NoteBlock.js';
+import SongManager from './managers/SongManager.js';
 
-// NoteBlock을 사용한 악보 데이터 생성 함수
-function createPianoSongData() {
-  const noteBlocks = [];
-  
-  // 레인별 고정 키 매핑
-  const laneKeys = {
-    1: '3',  // 1번 레인 -> 3키
-    2: 'e',  // 2번 레인 -> e키
-    3: 'k',  // 3번 레인 -> k키
-    4: 'm'   // 4번 레인 -> m키
-  };
-  
-  // 마디 1-4: 기본 패턴
-  for (let bar = 1; bar <= 4; bar++) {
-    const lane = bar % 2 === 1 ? 1 : 2;
-    const notes = bar % 2 === 1 ? ['C4', 'E4', 'G4'] : ['C4', 'F4', 'A4'];
-    
-    for (let beat = 1; beat <= 4; beat++) {
-      const timing = (bar - 1) * 4 + beat; // 마디와 박자를 초 단위로 변환
-      noteBlocks.push(new NoteBlock({
-        note: notes.join(','),
-        timing: timing,
-        duration: 0.5,
-        lane: lane,
-        key: laneKeys[lane], // 레인별 고정 키 사용
-        bar: bar,
-        beat: beat
-      }));
-    }
-  }
-  
-  // 마디 5-8: 복잡한 패턴
-  const complexPattern = [
-    { time: 17, notes: ['E5'], lane: 3, beat: 1 },
-    { time: 17.25, notes: ['D5'], lane: 2, beat: 1.25 },
-    { time: 17.75, notes: ['D5'], lane: 2, beat: 1.75 },
-    { time: 18.5, notes: ['C5'], lane: 1, beat: 2.5 },
-    { time: 18.75, notes: ['D5'], lane: 2, beat: 2.75 },
-    { time: 19.25, notes: ['C5'], lane: 1, beat: 3.25 },
-    { time: 19.75, notes: ['E5'], lane: 3, beat: 3.75 },
-    { time: 20.25, notes: ['D5','A4','E4'], lane: 2, beat: 4.25 },
-    { time: 21, notes: ['C5'], lane: 1, beat: 5 },
-    { time: 21.25, notes: ['A4'], lane: 4, beat: 5.25 },
-    { time: 22.25, notes: ['D5'], lane: 2, beat: 6.25 },
-    { time: 22.5, notes: ['C5'], lane: 1, beat: 6.5 },
-    { time: 22.75, notes: ['G4','C5','E5'], lane: 3, beat: 6.75 },
-    { time: 23.25, notes: ['C5'], lane: 1, beat: 7.25 },
-    { time: 23.5, notes: ['E5'], lane: 3, beat: 7.5 },
-    { time: 24.25, notes: ['F4','A4','D5'], lane: 2, beat: 8.25 },
-    { time: 25, notes: ['C5'], lane: 1, beat: 9 },
-    { time: 25.25, notes: ['A4'], lane: 4, beat: 9.25 },
-    { time: 27.5, notes: ['A4'], lane: 4, beat: 11.5 },
-    { time: 27.75, notes: ['C5'], lane: 1, beat: 11.75 },
-    { time: 28, notes: ['A4'], lane: 4, beat: 12 },
-    { time: 28.25, notes: ['C5'], lane: 1, beat: 12.25 },
-    { time: 28.75, notes: ['A4'], lane: 4, beat: 12.75 },
-    { time: 29, notes: ['C5'], lane: 1, beat: 13 },
-    { time: 29.5, notes: ['A4'], lane: 4, beat: 13.5 },
-    { time: 29.75, notes: ['G4'], lane: 1, beat: 13.75 },
-    { time: 31.25, notes: ['C4','E4','A4'], lane: 4, beat: 15.25 },
-    { time: 32.25, notes: ['B4','D4','G4'], lane: 1, beat: 16.25 }
-  ];
-  
-  complexPattern.forEach(pattern => {
-    noteBlocks.push(new NoteBlock({
-      note: pattern.notes.join(','),
-      timing: pattern.time,
-      duration: 0.5,
-      lane: pattern.lane,
-      key: laneKeys[pattern.lane], // 레인별 고정 키 사용
-      bar: 5 + Math.floor((pattern.time - 17) / 4),
-      beat: pattern.beat
-    }));
-  });
-  
-  return noteBlocks;
-}
-
-function createElectricGuitarSongData() {
-  const noteBlocks = [];
-  
-  // 레인별 고정 키 매핑
-  const laneKeys = {
-    1: '3',  // 1번 레인 -> 3키
-    2: 'e',  // 2번 레인 -> e키
-    3: 'k',  // 3번 레인 -> k키
-    4: 'm'   // 4번 레인 -> m키
-  };
-  
-  // 4마디 패턴
-  for (let bar = 1; bar <= 4; bar++) {
-    const patterns = [
-      { time: (bar - 1) * 4 + 1, notes: ['C3'], lane: 1 },
-      { time: (bar - 1) * 4 + 2, notes: ['E3'], lane: 2 },
-      { time: (bar - 1) * 4 + 3, notes: ['F3'], lane: 3 },
-      { time: (bar - 1) * 4 + 4, notes: bar === 1 || bar === 3 ? ['G3'] : ['A#3'], lane: 4 }
-    ];
-    
-    if (bar === 2) {
-      patterns[3] = { time: (bar - 1) * 4 + 4, notes: ['A#3'], lane: 4 };
-    } else if (bar === 3) {
-      patterns[0] = { time: (bar - 1) * 4 + 1, notes: ['E4'], lane: 1 };
-      patterns[1] = { time: (bar - 1) * 4 + 2, notes: ['F#4'], lane: 2 };
-    }
-    
-    patterns.forEach(pattern => {
-      noteBlocks.push(new NoteBlock({
-        note: pattern.notes.join(','),
-        timing: pattern.time,
-        duration: 0.5,
-        lane: pattern.lane,
-        key: laneKeys[pattern.lane], // 레인별 고정 키 사용
-        bar: bar,
-        beat: pattern.time - (bar - 1) * 4
-      }));
-    });
-  }
-  
-  return noteBlocks;
-}
-
-// NoteBlock을 사용한 악보 데이터를 생성합니다.
-const songDataRepository = {
-  keyboard: createPianoSongData(), // 키보드는 피아노 데이터를 사용
-  electric_guitar: createElectricGuitarSongData(),
-};
+// SongManager 인스턴스 생성
+const songManager = new SongManager();
 
 
 export default class JamScene extends Phaser.Scene {
@@ -137,12 +14,12 @@ export default class JamScene extends Phaser.Scene {
     super({ key: 'JamScene' });
     this.bpm = 84;
     this.socket = null;
-    this.myInstrumentName = null; // 'keyboard', 'electric_guitar' 등
+    this.myInstrumentName = null; // 'keyboard', 'electric_guitar', 'bass', 'drums' 등
     this.activeInstrument = null; // 현재 활성화된 악기 컨트롤러 인스턴스
     this.pressedKeys = {};
-    this.songDataRepo = songDataRepository;
-    this.noteBlocks = []; // NoteBlock 배열로 변경
-    this.currentBar = 0; // 마디 추적: 0부터 시작하도록 변경하여 Tone.Transport와 일치시킴
+    this.songManager = songManager; // SongManager 인스턴스
+    this.noteBlocks = []; // NoteBlock 배열
+    this.currentBar = 0; // 마디 추적
     this.barText = null;
     this.progressBar = null;
     this.progressBarBg = null;
@@ -173,33 +50,34 @@ export default class JamScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor('#2d2d2d');
     this.myInstrumentName = this.game.registry.get('myInstrument');
-    this.noteBlocks = this.songDataRepo[this.myInstrumentName] || [];
+    
+    // SongManager를 통해 곡 데이터 로드
+    this.noteBlocks = this.songManager.getSongData(this.myInstrumentName);
 
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
     console.log(`NoteBlocks loaded: ${this.noteBlocks.length}`);
+    console.log(`Current song: ${this.songManager.getCurrentSong()}`);
+
+    this.setupTimingGuideUI(); // 먼저 UI 설정 (lane1Y, lane2Y 등 생성)
+    
+    // 레인 키 매핑 설정 (Y 좌표와 함께)
+    const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
+    this.keyLanes = {
+      [laneKeys[1]]: this.lane1Y,  // 1번 레인
+      [laneKeys[2]]: this.lane2Y,  // 2번 레인
+      [laneKeys[3]]: this.lane3Y,  // 3번 레인
+      [laneKeys[4]]: this.lane4Y   // 4번 레인
+    };
+    
+    console.log('Lane Keys:', laneKeys);
+    console.log('Key Lanes:', this.keyLanes);
 
     this.createInstrument(); // 악기 컨트롤러 생성
     this.setupKeyboardInput();
-    this.setupTimingGuideUI();
     
-    // AudioContext 시작 안내 메시지
-    this.audioStartText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, 
-      '클릭하여 게임 시작', 
-      { 
-        fontSize: '32px', 
-        color: '#ffffff',
-        backgroundColor: '#000000',
-        padding: { x: 20, y: 10 }
-      }
-    ).setOrigin(0.5);
-    
-    // AudioContext 시작을 위한 클릭 이벤트 추가
-    this.input.on('pointerdown', () => {
+    // 키보드 입력으로 AudioContext 시작
+    this.input.keyboard.on('keydown', () => {
       this.initToneAudio();
-      if (this.audioStartText) {
-        this.audioStartText.destroy();
-        this.audioStartText = null;
-      }
     });
   }
 
@@ -269,13 +147,8 @@ export default class JamScene extends Phaser.Scene {
 
     this.noteVisualsGroup = this.add.group();
 
-    // 레인별 고정 키 매핑 - 4개 레인에 할당
-    this.keyLanes = {
-      '3': this.lane1Y,  // 1번 레인 -> 3키
-      'e': this.lane2Y,  // 2번 레인 -> e키
-      'k': this.lane3Y,  // 3번 레인 -> k키
-      'm': this.lane4Y   // 4번 레인 -> m키
-    };
+    // 레인별 키 매핑은 SongManager에서 가져온 것을 사용
+    // this.keyLanes는 create() 메서드에서 설정됨
 
     // === 3개의 보조선(가로선) 추가 (블럭 사이의 경계) ===
     const guideLineYPositions = [this.guideLine1Y, this.guideLine2Y, this.guideLine3Y];
@@ -316,6 +189,9 @@ export default class JamScene extends Phaser.Scene {
       const delaySec = spawnTime - nowAudio;
 
       const spawnNote = () => {
+        // 디버깅: NoteBlock 정보 확인
+        console.log(`Spawning note: key=${noteBlock.key}, lane=${noteBlock.lane}, yPos=${this.keyLanes[noteBlock.key]}`);
+        
         const visualObject = this.spawnNoteVisual(noteBlock);
         noteBlock.visualObject = visualObject;
         noteBlock.expectedHitTime = hitTime;
@@ -336,6 +212,11 @@ export default class JamScene extends Phaser.Scene {
 
   spawnNoteVisual(noteBlock) {
     const yPos = this.keyLanes[noteBlock.key] || this.cameras.main.height / 2;
+    
+    // 디버깅: 키와 Y 위치 확인
+    if (!this.keyLanes[noteBlock.key]) {
+      console.warn(`Key '${noteBlock.key}' not found in keyLanes:`, this.keyLanes);
+    }
 
     // 노트 블록 생성 (세로 모양으로 변경하고 텍스트 제거)
     const visualBlock = this.add.rectangle(0, 0, 12, 60, 0x00ff00).setOrigin(0.5);
