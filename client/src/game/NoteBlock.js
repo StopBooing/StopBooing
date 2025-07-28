@@ -13,7 +13,8 @@ export default class NoteBlock {
     hitTime = null, // 실제 히트 시간
     expectedHitTime = null, // 예상 히트 시간
     score = 0,      // 점수
-    combo = 0       // 콤보 수
+    combo = 0,      // 콤보 수
+    blockType = null // 블럭 타입 (tap, hold) - 자동 계산됨
   }) {
     this.note = note;
     this.timing = timing;
@@ -30,11 +31,68 @@ export default class NoteBlock {
     this.score = score;
     this.combo = combo;
     
+    // 블럭 타입 자동 계산 (duration 기반)
+    this.blockType = this.calculateBlockType();
+    
+    // 홀드 블럭 관련 상태
+    this.isHolding = false; // 홀드 중인지 여부
+    this.holdStartTime = null; // 홀드 시작 시간
+    this.holdEndTime = null; // 홀드 종료 시간
+    this.holdProgress = 0; // 홀드 진행률 (0~1)
+    
     // 생성 시간 기록
     this.createdAt = Date.now();
     
     // 고유 ID 생성
     this.id = this.generateId();
+  }
+
+  // 블럭 타입 계산 (duration 기반)
+  calculateBlockType() {
+    // 0.75박자 이상이면 홀드 블럭, 그 이하면 탭 블럭
+    return this.duration >= 0.75 ? 'hold' : 'tap';
+  }
+
+  // 홀드 블럭 시작
+  startHold(hitTime) {
+    if (this.blockType === 'hold' && !this.isHolding) {
+      this.isHolding = true;
+      this.holdStartTime = hitTime;
+      this.hit(hitTime, 'good'); // 홀드 시작 시 기본 점수
+    }
+  }
+
+  // 홀드 블럭 종료
+  endHold(endTime) {
+    if (this.blockType === 'hold' && this.isHolding) {
+      this.isHolding = false;
+      this.holdEndTime = endTime;
+      
+      // 홀드 진행률 계산
+      if (this.holdStartTime && this.expectedHitTime) {
+        const totalHoldTime = this.duration;
+        const actualHoldTime = endTime - this.holdStartTime;
+        this.holdProgress = Math.min(1, actualHoldTime / totalHoldTime);
+        
+        // 홀드 완료도에 따른 점수 조정
+        if (this.holdProgress >= 0.8) {
+          this.accuracy = 'perfect';
+        } else if (this.holdProgress >= 0.5) {
+          this.accuracy = 'good';
+        } else {
+          this.accuracy = 'bad';
+        }
+        this.calculateScore();
+      }
+    }
+  }
+
+  // 홀드 블럭 업데이트 (진행률 계산)
+  updateHoldProgress(currentTime) {
+    if (this.blockType === 'hold' && this.isHolding && this.holdStartTime) {
+      const elapsed = currentTime - this.holdStartTime;
+      this.holdProgress = Math.min(1, elapsed / this.duration);
+    }
   }
 
   // 고유 ID 생성 메서드
