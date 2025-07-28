@@ -128,8 +128,8 @@ export default class JamScene extends Phaser.Scene {
 
   setupTimingGuideUI() {
     // 가로 방향 리듬게임으로 변경 - 회색 영역 전체를 활용
-    this.RHYTHM_GAME_TOP = 80;    // 리듬게임 영역 상단
-    this.RHYTHM_GAME_BOTTOM = 380; // 리듬게임 영역 하단
+    this.RHYTHM_GAME_TOP = 0;    // 리듬게임 영역 상단
+    this.RHYTHM_GAME_BOTTOM = this.cameras.main.height; // 리듬게임 영역 하단
     this.HIT_LINE_X = 150;  // 기준선의 X 위치 (화면 왼쪽)
     this.SPAWN_X = this.cameras.main.width - 50; // 노트 생성 위치 (화면 오른쪽 여백)
     this.noteSpeed = 0;
