@@ -30,7 +30,7 @@ export default class Piano extends BaseInstrument {
         if (this.scene.loadingText) {
           this.scene.loadingText.destroy();
         }
-        this.scene.add.text(400, 450, "피아노 연주 준비 완료!", { fontSize: '20px' }).setOrigin(0.5);
+        // this.scene.add.text(400, 450, "피아노 연주 준비 완료!", { fontSize: '20px' }).setOrigin(0.5);
         this.scene.startCountdown();
       },
       onerror: (error) => {
