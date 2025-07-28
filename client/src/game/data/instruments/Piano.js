@@ -93,7 +93,7 @@ export default class Piano {
     allNotes.sort((a, b) => a.timing - b.timing);
     
     // 각 음의 duration을 다음 음과의 시간 차이로 계산
-    const durationMultiplier = 0.3; // 블럭 길이 배수 (0.3 = 30%로 줄임)
+    const durationMultiplier = 1.2; // 블럭 길이 배수 (0.3 = 30%로 줄임)
     
     for (let i = 0; i < allNotes.length; i++) {
       const currentNote = allNotes[i];
