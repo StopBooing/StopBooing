@@ -5,17 +5,18 @@ import socket from '../services/socket';
 
 // ──────────────────────────────
 // 편집기에서 만든 이름들
-const STATE_MACHINE = "DrumAnimation";
-const RIGHT_HIT_TRIGGER  = "rightHitTrigger";   // Trigger (play)
-const HIT_TRIGGER  = "hitTrigger";   // Trigger (play)
-const ANOYING_TRIGGER  = "anoyingTrigger";   // Trigger (play)
+const STATE_MACHINE = "PianoAnimation";
+const LEFTHIT_TRIGGER  = "leftHitTrigger";   // Trigger (play)
+const RIGHTHIT_TRIGGER  = "rightHitTrigger";   // Trigger (play)
+const DOUBLEHIT_TRIGGER  = "doubleHitTrigger";   // Trigger (play)
+const ANNOYING_TRIGGER  = "annoyingTrigger";   // Trigger (play)
 // ──────────────────────────────
 
-export default function StickmanGuitar({width, height}) {
+export default function StickmanVocal({width, height}) {
     
   /* ① Rive 인스턴스 + Canvas ref */
   const { rive, canvasRef, RiveComponent } = useRive({
-    src: "/animations/stickman_drum.riv",
+    src: "/animations/stickman_piano.riv",
     stateMachines: STATE_MACHINE, // 임시로 주석처리
     autoplay: true,
     onStateChange: (event) => {
@@ -27,30 +28,29 @@ export default function StickmanGuitar({width, height}) {
   });
 
   /* ② Trigger 핸들 얻기 */
+  const leftHitTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    LEFTHIT_TRIGGER
+  );
   const rightHitTrigger = useStateMachineInput(
     rive,
     STATE_MACHINE,
-    RIGHT_HIT_TRIGGER
+    RIGHTHIT_TRIGGER
   );
-  const hitTrigger = useStateMachineInput(
+  const doubleHitTrigger = useStateMachineInput(
     rive,
     STATE_MACHINE,
-    HIT_TRIGGER
+    DOUBLEHIT_TRIGGER
   );
-  const anoyingTrigger = useStateMachineInput(
+  const annoyingTrigger = useStateMachineInput(
     rive,
     STATE_MACHINE,
-    ANOYING_TRIGGER
+    ANNOYING_TRIGGER
   );
   useEffect(()=>{
     socket.on('HITfromSERVER',(data)=>{
         console.log('HITfromSERVER',data);
-        if(data.key === 'a'){
-            rightHitTrigger.fire();
-        }
-        if(data.key === 's'){
-            hitTrigger.fire();
-        }
     });
     socket.on('ACCURACYfromSERVER',(data)=>{
         console.log('ACCURACYfromSERVER',data);
@@ -68,21 +68,18 @@ export default function StickmanGuitar({width, height}) {
           }} 
         />
       )}
-      {!RiveComponent && (
-        <div style={{ 
-          width: 400, 
-          height: 650, 
-          border: '1px solid red',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f0f0f0'
-        }}>
-          Rive 컴포넌트 로딩 중...
-        </div>
-      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center', alignItems: 'center' }}>
 
-      {/* ⑤ Trigger 버튼 */}
+      <button
+        onClick={() => {
+          if (leftHitTrigger) {
+            leftHitTrigger.fire();
+          }
+        }}
+        style={{ marginTop: 12 }}
+      >
+        leftHitTrigger
+      </button>
       <button
         onClick={() => {
           if (rightHitTrigger) {
@@ -95,24 +92,25 @@ export default function StickmanGuitar({width, height}) {
       </button>
       <button
         onClick={() => {
-          if (hitTrigger) {
-            hitTrigger.fire();
+          if (doubleHitTrigger) {
+            doubleHitTrigger.fire();
           }
         }}
         style={{ marginTop: 12 }}
       >
-        hitTrigger
+        doubleHitTrigger
       </button>
       <button
         onClick={() => {
-          if (anoyingTrigger) {
-            anoyingTrigger.fire();
+        if (annoyingTrigger) {
+            annoyingTrigger.fire();
           }
         }}
         style={{ marginTop: 12 }}
       >
-        anoyingTrigger
+        annoyingTrigger
       </button>
+      </div>
     </div>
   );
 }

@@ -41,8 +41,7 @@ export default function StickmanGuitar({width, height}) {
         <RiveComponent 
           style={{ 
             width: width, 
-            height: height, 
-            border: '1px solid red' 
+            height: height
           }} 
         />
       )}

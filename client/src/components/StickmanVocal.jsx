@@ -64,8 +64,7 @@ export default function StickmanVocal({width, height}) {
         <RiveComponent 
           style={{ 
             width: width, 
-            height: height, 
-            border: '1px solid red' 
+            height: height
           }} 
         />
       )}
