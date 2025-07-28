@@ -21,8 +21,6 @@ export default class JamScene extends Phaser.Scene {
     this.noteBlocks = []; // NoteBlock 배열
     this.currentBar = 0; // 마디 추적
     this.barText = null;
-    this.progressBar = null;
-    this.progressBarBg = null;
     this.barDuration = 0;
     this.HIT_LINE_Y = 500;
     this.SPAWN_Y = 100;
@@ -31,8 +29,15 @@ export default class JamScene extends Phaser.Scene {
     this.keyPositions = {};
     this.isBarTransitioning = false; // 마디 트랜지션 중복 방지
     this.countdownStarted = false; // 카운트다운 시작 여부
+    this.audioInitialized = false; // AudioContext 초기화 여부
+    this.countdownTimer = null; // 카운트다운 타이머 객체
     this.currentCombo = 0; // 현재 콤보 수
     this.totalScore = 0; // 총 점수
+    
+    // 전역 카운트다운 상태 관리 (Scene 재시작에도 유지)
+    if (!window.jamSceneCountdownStarted) {
+      window.jamSceneCountdownStarted = false;
+    }
   }
 
   init() {
@@ -74,31 +79,33 @@ export default class JamScene extends Phaser.Scene {
 
     this.createInstrument(); // 악기 컨트롤러 생성
     this.setupKeyboardInput();
-    
-    // 키보드 입력으로 AudioContext 시작
-    this.input.keyboard.on('keydown', () => {
-      this.initToneAudio();
-    });
   }
 
   async initToneAudio() {
+    console.log(`initToneAudio 호출됨 - context state: ${Tone.context.state}`);
+    
+    // 이미 AudioContext가 실행 중이면 아무것도 하지 않음
+    if (Tone.context.state === 'running') {
+      console.log('AudioContext 이미 실행 중 - 무시');
+      return;
+    }
+    
     if (Tone.context.state === 'suspended') {
       try {
         await Tone.start();
         console.log('Tone.js 오디오 컨텍스트 시작됨');
         
-        // AudioContext가 시작되면 카운트다운 시작
+        // AudioContext가 시작되면 카운트다운 시작 (한 번만)
         if (!this.countdownStarted) {
+          console.log('카운트다운 시작 (suspended -> running)');
           this.countdownStarted = true;
           this.startCountdown();
         }
       } catch (error) {
         console.error('AudioContext 시작 실패:', error);
       }
-    } else if (Tone.context.state === 'running' && !this.countdownStarted) {
-      // 이미 실행 중이면 카운트다운만 시작
-      this.countdownStarted = true;
-      this.startCountdown();
+    } else {
+      console.log(`AudioContext 시작하지 않음 - context state: ${Tone.context.state}`);
     }
   }
 
@@ -159,6 +166,35 @@ export default class JamScene extends Phaser.Scene {
         0xcccccc, 0.4 // 연한 회색, 적절한 투명도
       ).setOrigin(0);
     });
+
+    // === 키 입력 표시를 위한 그래픽 객체들 생성 ===
+    this.keyPressIndicators = {};
+    const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
+    
+    // 각 레인별로 키 입력 표시 생성
+    for (let lane = 1; lane <= 4; lane++) {
+      const key = laneKeys[lane];
+      const laneY = this[`lane${lane}Y`];
+      
+      // 키 입력 표시 (기준선 부분에 작은 사각형)
+      const indicator = this.add.rectangle(
+        this.HIT_LINE_X - 10, // 기준선 왼쪽에 위치
+        laneY,
+        20, // 가로 길이
+        30, // 세로 길이
+        0x00ff00, // 초록색 (기본)
+        0.7 // 투명도
+      ).setOrigin(0.5);
+      
+      // 초기에는 숨김
+      indicator.setVisible(false);
+      
+      this.keyPressIndicators[key] = {
+        graphics: indicator,
+        lane: lane,
+        isPressed: false
+      };
+    }
   }
 
   startSongTracker() {
@@ -168,7 +204,6 @@ export default class JamScene extends Phaser.Scene {
     Tone.Transport.cancel(0);
 
     this.currentBar = 0;
-    this.createProgressBar();
 
     const bpm = 84;
     Tone.Transport.bpm.value = bpm;
@@ -176,7 +211,7 @@ export default class JamScene extends Phaser.Scene {
     this.barDuration = Tone.Time('1m').toSeconds();
 
     // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
-    this.previewTimeSec = 3; // 3초 동안 오른쪽에서 왼쪽으로 이동
+    this.previewTimeSec = 2; // 3초 동안 오른쪽에서 왼쪽으로 이동
     const travelDistance = this.SPAWN_X - this.HIT_LINE_X;
     this.noteSpeed = travelDistance / this.previewTimeSec;
 
@@ -218,31 +253,57 @@ export default class JamScene extends Phaser.Scene {
       console.warn(`Key '${noteBlock.key}' not found in keyLanes:`, this.keyLanes);
     }
 
-    // 노트 블록 생성 (세로 모양으로 변경하고 텍스트 제거)
-    const visualBlock = this.add.rectangle(0, 0, 12, 60, 0x00ff00).setOrigin(0.5);
+    // 음의 길이에 따라 블럭의 가로 길이 계산
+    const baseWidth = 12; // 기본 가로 길이
+    const baseHeight = 60; // 기본 세로 길이
+    const durationMultiplier = 2; // 길이 배수 (조절 가능)
+    
+    // duration을 초 단위로 받아서 픽셀 단위로 변환
+    // 1초 = 100픽셀 정도로 설정 (게임 속도에 따라 조절)
+    const width = Math.max(baseWidth, noteBlock.duration * 100 * durationMultiplier);
+    
+    // 노트 블록 생성 (음의 길이에 따라 가로 길이 조절)
+    // setOrigin(0, 0.5)로 설정하여 블럭의 시작점(왼쪽)을 기준으로 함
+    const visualBlock = this.add.rectangle(0, 0, width, baseHeight, 0x00ff00).setOrigin(0, 0.5);
 
-    // 컨테이너를 화면 오른쪽에서 시작하도록 설정 (텍스트 없이 블럭만)
+    // 컨테이너를 화면 오른쪽에서 시작하도록 설정
+    // 블럭의 시작점이 SPAWN_X에 위치하도록 조정
     const container = this.add.container(this.SPAWN_X, yPos, [visualBlock]);
     this.noteVisualsGroup.add(container);
+    
+    // 디버깅: 블럭 크기 정보 출력
+    console.log(`NoteBlock 생성: duration=${noteBlock.duration}s, width=${width}px, note=${noteBlock.note}`);
+    
     return container;
   }
 
   startCountdown() {
+    console.log('startCountdown 호출됨');
+    
+    // 이미 카운트다운이 실행 중인지 확인
+    if (this.countdownTimer) {
+      console.log('카운트다운 이미 실행 중 - 무시');
+      return;
+    }
+    
     let count = 3;
     const countdownText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 3, count, { 
       fontSize: '72px', // 기존 96px에서 72px로 줄임
       color: '#fff' 
     }).setOrigin(0.5);
 
-    const timer = this.time.addEvent({
+    this.countdownTimer = this.time.addEvent({
       delay: 1000,
       callback: () => {
         count--;
+        console.log(`카운트다운: ${count}`);
         if (count > 0) {
           countdownText.setText(count);
         } else {
+          console.log('카운트다운 완료, startSongTracker 시작');
           countdownText.destroy();
-          timer.remove();
+          this.countdownTimer.remove();
+          this.countdownTimer = null;
           this.startSongTracker();
         }
       },
@@ -251,22 +312,17 @@ export default class JamScene extends Phaser.Scene {
     });
   }
   
-  createProgressBar() {
-    this.progressBarWidth = 300;
-    this.progressBarHeight = 20;
-    this.progressBarX = (this.sys.game.config.width - this.progressBarWidth) / 2;
-    this.progressBarY = 20; // 화면 상단에 붙이기 위해 y좌표를 20으로 조정
 
-    this.progressBarBg = this.add.graphics();
-    this.progressBarBg.fillStyle(0x555555, 1);
-    this.progressBarBg.fillRect(this.progressBarX, this.progressBarY, this.progressBarWidth, this.progressBarHeight);
-
-    this.progressBar = this.add.graphics();
-  }
 
   setupKeyboardInput() {
     this.input.keyboard.on('keydown', (event) => {
       event.preventDefault();
+
+      // AudioContext 시작 (첫 번째 키 입력 시에만)
+      if (!this.audioInitialized) {
+        this.audioInitialized = true;
+        this.initToneAudio();
+      }
 
       const code = event.code;
       if (this.pressedKeys[code] || !this.activeInstrument) {
@@ -275,6 +331,9 @@ export default class JamScene extends Phaser.Scene {
 
       const keyId = this.getKeyIdentifier(event);
       if (!keyId) return;
+
+      // 키 입력 표시 활성화
+      this.showKeyPressIndicator(keyId, true);
 
       // NoteBlock에서 해당 키와 타이밍에 맞는 노트 찾기
       const now = Tone.now();
@@ -304,6 +363,12 @@ export default class JamScene extends Phaser.Scene {
 
     this.input.keyboard.on('keyup', (event) => {
       const code = event.code;
+
+      // 키 입력 표시 비활성화
+      const keyId = this.getKeyIdentifier(event);
+      if (keyId) {
+        this.showKeyPressIndicator(keyId, false);
+      }
 
       // Shift 또는 Control 키에서 손을 떼면, 해당 조합으로 눌렀던 모든 소리를 멈춥니다.
       if (code === 'ShiftLeft' || code === 'ShiftRight' || code === 'ControlLeft' || code === 'ControlRight') {
@@ -390,6 +455,23 @@ export default class JamScene extends Phaser.Scene {
       4: 'm'
     };
     return laneKeys[lane] || '3';
+  }
+
+  // 키 입력 표시를 제어하는 메서드
+  showKeyPressIndicator(keyId, isPressed) {
+    const indicator = this.keyPressIndicators[keyId];
+    if (!indicator) return;
+
+    indicator.isPressed = isPressed;
+    
+    if (isPressed) {
+      // 키를 누르고 있을 때: 빨간색으로 변경하고 표시
+      indicator.graphics.setFillStyle(0xff0000, 0.8);
+      indicator.graphics.setVisible(true);
+    } else {
+      // 키를 떼었을 때: 숨김
+      indicator.graphics.setVisible(false);
+    }
   }
 
   // 놓친 노트 처리 메서드
@@ -482,7 +564,8 @@ export default class JamScene extends Phaser.Scene {
         const x = this.SPAWN_X - (this.SPAWN_X - this.HIT_LINE_X) * progress;
         noteBlock.visualObject.x = x;
         
-        // 히트 라인을 지나간 노트는 MISS 처리
+        // 블럭의 시작점이 히트 라인을 지나간 노트는 MISS 처리
+        // 블럭의 시작점이 히트 라인을 지나면 MISS
         if (timeToHit < -0.1 && !noteBlock.isHit) {
           this.handleMissedNote(noteBlock, now);
         }
@@ -497,16 +580,5 @@ export default class JamScene extends Phaser.Scene {
     });
 
     this.scheduledNotes = this.scheduledNotes.filter(noteBlock => noteBlock.visualObject !== null);
-
-    // 진행 막대 업데이트 (기존 코드 유지)
-    if (this.progressBar) {
-      const currentTransportTime = Tone.Transport.position;
-      const [bar, beat, sixteenth] = currentTransportTime.split(':').map(Number);
-      const barProgress = (beat * 16 + sixteenth) / (Tone.Transport.timeSignature * 16);
-      
-      this.progressBar.clear();
-      this.progressBar.fillStyle(0x00ff00, 1);
-      this.progressBar.fillRect(this.progressBarX, this.progressBarY, this.progressBarWidth * barProgress, this.progressBarHeight);
-    }
   }
 }
