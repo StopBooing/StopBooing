@@ -28,54 +28,77 @@ export default class Piano {
     // 모든 음의 타이밍을 배열로 정의
     const allNotes = [];
     
-    // 마디 1-4: 기본 패턴
-    for (let bar = 1; bar <= 4; bar++) {
-      const lane = bar % 2 === 1 ? 1 : 2;
-      const notes = bar % 2 === 1 ? ['C4', 'E4', 'G4'] : ['C4', 'F4', 'A4'];
+    // 마디 1-4: 다양한 duration 패턴 (탭과 홀드 블럭 테스트)
+    const testPattern = [
+      // 마디 1
+      { time: 1, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 1 },
+      { time: 2, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 2 },
+      { time: 3, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 3 },
+      { time: 4, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 4 },
       
-      for (let beat = 1; beat <= 4; beat++) {
-        const timing = (bar - 1) * 4 + beat;
-        allNotes.push({
-          note: notes.join(','),
-          timing: timing,
-          lane: lane,
-          key: laneKeys[lane],
-          bar: bar,
-          beat: beat
-        });
-      }
-    }
+      // 마디 2
+      { time: 5, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 1 },
+      { time: 6, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 2 },
+      { time: 7, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 3 },
+      { time: 8, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 4 },
+      
+      // 마디 3
+      { time: 9, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 1 },
+      { time: 10, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 2 },
+      { time: 11, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 3 },
+      { time: 12, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 4 },
+      
+      // 마디 4
+      { time: 13, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 1 },
+      { time: 14, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 2 },
+      { time: 15, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 3 },
+      { time: 16, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 4 }
+    ];
     
-    // 마디 5-8: 복잡한 패턴
+    testPattern.forEach(pattern => {
+      allNotes.push({
+        note: pattern.notes.join(','),
+        timing: pattern.time,
+        lane: pattern.lane,
+        key: laneKeys[pattern.lane],
+        bar: Math.floor((pattern.time - 1) / 4) + 1,
+        beat: pattern.beat,
+        duration: pattern.duration
+      });
+    });
+    
+    // 마디 5-8
     const complexPattern = [
-      { time: 17, notes: ['E5'], lane: 3, beat: 1 },
-      { time: 17.25, notes: ['D5'], lane: 2, beat: 1.25 },
-      { time: 17.75, notes: ['D5'], lane: 2, beat: 1.75 },
-      { time: 18.5, notes: ['C5'], lane: 1, beat: 2.5 },
-      { time: 18.75, notes: ['D5'], lane: 2, beat: 2.75 },
-      { time: 19.25, notes: ['C5'], lane: 1, beat: 3.25 },
-      { time: 19.75, notes: ['E5'], lane: 3, beat: 3.75 },
-      { time: 20.25, notes: ['D5','A4','E4'], lane: 2, beat: 4.25 },
-      { time: 21, notes: ['C5'], lane: 1, beat: 5 },
-      { time: 21.25, notes: ['A4'], lane: 4, beat: 5.25 },
-      { time: 22.25, notes: ['D5'], lane: 2, beat: 6.25 },
-      { time: 22.5, notes: ['C5'], lane: 1, beat: 6.5 },
-      { time: 22.75, notes: ['G4','C5','E5'], lane: 3, beat: 6.75 },
-      { time: 23.25, notes: ['C5'], lane: 1, beat: 7.25 },
-      { time: 23.5, notes: ['E5'], lane: 3, beat: 7.5 },
-      { time: 24.25, notes: ['F4','A4','D5'], lane: 2, beat: 8.25 },
-      { time: 25, notes: ['C5'], lane: 1, beat: 9 },
-      { time: 25.25, notes: ['A4'], lane: 4, beat: 9.25 },
-      { time: 27.5, notes: ['A4'], lane: 4, beat: 11.5 },
-      { time: 27.75, notes: ['C5'], lane: 1, beat: 11.75 },
-      { time: 28, notes: ['A4'], lane: 4, beat: 12 },
-      { time: 28.25, notes: ['C5'], lane: 1, beat: 12.25 },
-      { time: 28.75, notes: ['A4'], lane: 4, beat: 12.75 },
-      { time: 29, notes: ['C5'], lane: 1, beat: 13 },
-      { time: 29.5, notes: ['A4'], lane: 4, beat: 13.5 },
-      { time: 29.75, notes: ['G4'], lane: 1, beat: 13.75 },
-      { time: 31.25, notes: ['C4','E4','A4'], lane: 4, beat: 15.25 },
-      { time: 32.25, notes: ['B4','D4','G4'], lane: 1, beat: 16.25 }
+      // 마디 5
+      { time: 17, notes: ['G4','C5','E5'], duration: 0.25, lane: 3, beat: 1 }, //미
+      { time: 17.25, notes: ['D5'], duration: 0.5, lane: 2, beat: 1.25 }, //레
+      { time: 17.75, notes: ['D5'], duration: 0.75, lane: 2, beat: 1.75 }, //레
+      { time: 18.5, notes: ['C5'], duration: 0.25, lane: 1, beat: 2.5 }, //도
+      { time: 18.75, notes: ['D5'], duration: 0.5, lane: 2, beat: 2.75 }, //레
+      { time: 19.25, notes: ['C5'], duration: 0.5, lane: 1, beat: 3.25 }, //도
+      { time: 19.75, notes: ['E5'], duration: 0.5, lane: 3, beat: 3.75 }, //미 
+      { time: 20.25, notes: ['D5','A4','E4'], duration: 0.75, lane: 2, beat: 4.25 }, //레
+      { time: 21, notes: ['C5'], duration: 0.25, lane: 1, beat: 5 }, //도
+      { time: 21.25, notes: ['A4'], duration: 0.5, lane: 4, beat: 5.25 } //라
+      
+      // { time: 22.25, notes: ['D5'], lane: 2, beat: 6.25 },
+      // { time: 22.5, notes: ['C5'], lane: 1, beat: 6.5 },
+      // { time: 22.75, notes: ['G4','C5','E5'], lane: 3, beat: 6.75 },
+      // { time: 23.25, notes: ['C5'], lane: 1, beat: 7.25 },
+      // { time: 23.5, notes: ['E5'], lane: 3, beat: 7.5 },
+      // { time: 24.25, notes: ['F4','A4','D5'], lane: 2, beat: 8.25 },
+      // { time: 25, notes: ['C5'], lane: 1, beat: 9 },
+      // { time: 25.25, notes: ['A4'], lane: 4, beat: 9.25 },
+      // { time: 27.5, notes: ['A4'], lane: 4, beat: 11.5 },
+      // { time: 27.75, notes: ['C5'], lane: 1, beat: 11.75 },
+      // { time: 28, notes: ['A4'], lane: 4, beat: 12 },
+      // { time: 28.25, notes: ['C5'], lane: 1, beat: 12.25 },
+      // { time: 28.75, notes: ['A4'], lane: 4, beat: 12.75 },
+      // { time: 29, notes: ['C5'], lane: 1, beat: 13 },
+      // { time: 29.5, notes: ['A4'], lane: 4, beat: 13.5 },
+      // { time: 29.75, notes: ['G4'], lane: 1, beat: 13.75 },
+      // { time: 31.25, notes: ['C4','E4','A4'], lane: 4, beat: 15.25 },
+      // { time: 32.25, notes: ['B4','D4','G4'], lane: 1, beat: 16.25 }
     ];
     
     complexPattern.forEach(pattern => {
@@ -85,30 +108,32 @@ export default class Piano {
         lane: pattern.lane,
         key: laneKeys[pattern.lane],
         bar: 5 + Math.floor((pattern.time - 17) / 4),
-        beat: pattern.beat
+        beat: pattern.beat,
+        duration: pattern.duration // duration 추가
       });
     });
     
     // 모든 음을 타이밍 순으로 정렬
     allNotes.sort((a, b) => a.timing - b.timing);
     
-    // 각 음의 duration을 다음 음과의 시간 차이로 계산
-    const durationMultiplier = 1.2; // 블럭 길이 배수 (0.3 = 30%로 줄임)
-    
+    // 각 음의 duration 설정 (명시적으로 지정된 duration 우선 사용)
     for (let i = 0; i < allNotes.length; i++) {
       const currentNote = allNotes[i];
       let duration;
       
-      if (i === allNotes.length - 1) {
+      if (currentNote.duration) {
+        // 명시적으로 지정된 duration 사용
+        duration = currentNote.duration;
+      } else if (i === allNotes.length - 1) {
         // 마지막 음은 기본 길이
-        duration = 0.5; // 기본 길이도 줄임
+        duration = 0.5;
       } else {
-        // 다음 음과의 시간 차이를 duration으로 설정 (배수 적용)
+        // 다음 음과의 시간 차이를 duration으로 설정
         const nextNote = allNotes[i + 1];
         const timeDiff = nextNote.timing - currentNote.timing;
-        duration = timeDiff * durationMultiplier;
+        duration = timeDiff * 0.8; // 80%로 줄임
         
-        // 최소 길이 보장 (너무 짧으면 기본값 사용)
+        // 최소 길이 보장
         if (duration < 0.05) {
           duration = 0.3;
         }
