@@ -47,6 +47,12 @@ function PhaserGame({ instrument }) {
 
     return () => {
       if (gameRef.current) {
+        // JamScene의 cleanup 메서드 호출
+        const jamScene = gameRef.current.scene.getScene('JamScene');
+        if (jamScene && jamScene.cleanup) {
+          jamScene.cleanup();
+        }
+        
         gameRef.current.destroy(true);
         gameRef.current = null;
       }

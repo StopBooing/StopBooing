@@ -80,9 +80,17 @@ export default class NoteBlock {
         this.isHit = true; // Hold 블럭 시작 시 isHit을 true로 설정
         this.hitTime = hitTime; // 실제 히트 시간 설정
         
-        // 시작 타이밍 판정
+        // 시작 타이밍 판정 (하위 호환성을 위해 기존 메서드 사용)
         this.startAccuracy = this.judgeAccuracy(hitTime);
         console.log(`Hold started: ${this.startAccuracy} (${hitTime.toFixed(2)}s)`);
+        
+        // 시작이 miss면 즉시 완료 처리 (끝까지 기다리지 않음)
+        if (this.startAccuracy === 'miss') {
+          this.isCompleted = true;
+          this.accuracy = 'miss';
+          this.calculateScore();
+          console.log(`Hold block failed at start: miss`);
+        }
       }
       // 늦게 눌렀을 때도 홀드 상태 유지 (이미 홀드 중이면 아무것도 하지 않음)
     }
@@ -93,6 +101,12 @@ export default class NoteBlock {
     if (this.blockType === 'hold' && this.isHolding) {
       this.isHolding = false;
       this.holdEndTime = endTime;
+      
+      // 시작이 이미 miss였다면 끝 판정을 하지 않음
+      if (this.startAccuracy === 'miss') {
+        console.log(`Hold block already failed at start, skipping end judgment`);
+        return;
+      }
       
       // 홀드 진행률 계산
       if (this.holdStartTime && this.expectedHitTime) {
@@ -125,17 +139,33 @@ export default class NoteBlock {
         this.endAccuracy = endAccuracy;
         console.log(`Hold ended: ${endAccuracy} (${endTime.toFixed(2)}s, expected: ${expectedEndTime.toFixed(2)}s)`);
         
-
+        // 최종 정확도 결정: JudgmentManager의 개선된 로직 사용
+        // 이 부분은 JamScene에서 JudgmentManager를 통해 처리하도록 변경
+        this.accuracy = endAccuracy; // 임시로 끝 판정만 사용
         
-        // 점수 계산 (끝 판정 기준)
-        this.accuracy = this.endAccuracy;
+        // 점수 계산 (최종 정확도 기준)
         this.calculateScore();
-        console.log(`End accuracy: ${this.endAccuracy}`);
+        console.log(`Final accuracy: ${this.accuracy} (start: ${this.startAccuracy}, end: ${endAccuracy})`);
         
         // Hold 블럭 완료 상태로 설정
         this.isCompleted = true;
         console.log(`Hold block completed: ${this.toString()}`);
       }
+    }
+  }
+
+  // 홀드 블럭 중간에 키를 떼면 miss 처리
+  releaseHoldEarly(currentTime) {
+    if (this.blockType === 'hold' && this.isHolding && !this.isCompleted) {
+      this.isHolding = false;
+      this.holdEndTime = currentTime;
+      
+      // 중간에 떼면 miss
+      this.endAccuracy = 'miss';
+      this.accuracy = 'miss';
+      this.isCompleted = true;
+      
+      console.log(`Hold block released early: miss at ${currentTime.toFixed(2)}s`);
     }
   }
 
@@ -235,8 +265,9 @@ export default class NoteBlock {
     }
   }
 
-  // 정확도 판정
+  // 정확도 판정 (JudgmentManager로 이동됨)
   judgeAccuracy(hitTime) {
+    // 이 메서드는 하위 호환성을 위해 유지하지만 실제로는 JudgmentManager를 사용해야 함
     if (!this.expectedHitTime) return 'miss';
     const timeDiff = Math.abs(hitTime - this.expectedHitTime);
     if (timeDiff <= 0.18) return 'perfect';
@@ -308,8 +339,8 @@ export default class NoteBlock {
     if (this.blockType !== 'hold' || !this.expectedHitTime) return null;
     
     const expectedEndTime = this.expectedHitTime + this.duration;
-    const endTimeDiff = Math.abs(currentTime - expectedEndTime);
-    
+    // JudgmentManager의 judgeHoldEnd 메서드를 사용하는 것이 좋지만
+    // 현재는 하위 호환성을 위해 기존 로직 유지
     let endAccuracy;
     if (currentTime < expectedEndTime - 0.2) {
       // 너무 일찍 뗌
