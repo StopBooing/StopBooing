@@ -23,7 +23,7 @@ export default class Piano extends BaseInstrument {
     this.instrument = new Tone.Sampler({
       urls: pianoNotes,
       baseUrl: 'assets/acoustic_grand_piano-mp3/',
-      release: 1, // 소리가 멈추는 시간을 1초에서 0.1초로 줄여 즉시 반응하는 것처럼 만듭니다.
+      release: 0.5, // hold 블럭을 위해 release 시간을 조정
       onload: () => {
         console.log('피아노 샘플이 성공적으로 로드되었습니다.');
         this.isLoaded = true;

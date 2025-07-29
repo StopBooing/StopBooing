@@ -28,7 +28,7 @@ export default class ElectricGuitar extends BaseInstrument {
     this.instrument = new Tone.Sampler({
       urls: guitarNotes,
       baseUrl: 'assets/distortion_guitar-mp3/',
-      release: 1,
+      release: 0.5, // hold 블럭을 위해 release 시간을 조정
       onload: () => {
         console.log('일렉기타 샘플 로드 완료');
         this.isLoaded = true;

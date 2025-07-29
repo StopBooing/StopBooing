@@ -39,7 +39,7 @@ export default class GameScene extends Phaser.Scene {
 
 
     socket.on('HITfromSERVER',(data)=>{
-        console.log('HITfromSERVER',data);
+        // console.log('HITfromSERVER',data);
     });
     // 초기화: 아무것도 그리지 않음
   }
