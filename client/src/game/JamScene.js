@@ -56,7 +56,8 @@ export default class JamScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#2d2d2d');
+    // Deemo 스타일: 밝은 흰색 계열 배경
+    this.cameras.main.setBackgroundColor('#f7f6f3'); // Deemo 느낌의 따뜻한 흰색
     this.myInstrumentName = this.game.registry.get('myInstrument');
     
     // SPAWN_X는 카메라 너비에 의존하므로 create에서 계산
@@ -142,76 +143,59 @@ export default class JamScene extends Phaser.Scene {
   }
 
   setupTimingGuideUI() {
-    // 가로 방향 리듬게임으로 변경 - 회색 영역 전체를 활용
-    this.RHYTHM_GAME_TOP = 0;    // 리듬게임 영역 상단
-    this.RHYTHM_GAME_BOTTOM = this.cameras.main.height; // 리듬게임 영역 하단
-    this.HIT_LINE_X = 150;  // 기준선의 X 위치 (화면 왼쪽)
-    this.SPAWN_X = this.cameras.main.width - 50; // 노트 생성 위치 (화면 오른쪽 여백)
+    // Deemo 스타일: 밝은 배경에 어울리는 연한 회색/베이지 계열로 UI 색상 조정
+    this.RHYTHM_GAME_TOP = 0;
+    this.RHYTHM_GAME_BOTTOM = this.cameras.main.height;
+    this.HIT_LINE_X = 150;
+    this.SPAWN_X = this.cameras.main.width - 50;
     this.noteSpeed = 0;
 
-    // 4개의 레인 Y 좌표 계산 (보조선 사이에 블럭이 위치하도록)
     const gameHeight = this.RHYTHM_GAME_BOTTOM - this.RHYTHM_GAME_TOP;
-    const laneSpacing = gameHeight / 4; // 4등분하여 3개의 보조선과 4개의 레인 공간 생성
+    const laneSpacing = gameHeight / 4;
     
-    // 보조선 위치 (블럭 사이의 경계)
     this.guideLine1Y = this.RHYTHM_GAME_TOP + laneSpacing * 1;
     this.guideLine2Y = this.RHYTHM_GAME_TOP + laneSpacing * 2;
     this.guideLine3Y = this.RHYTHM_GAME_TOP + laneSpacing * 3;
     
-    // 블럭이 위치할 레인 (보조선 사이의 중앙)
     this.lane1Y = this.RHYTHM_GAME_TOP + laneSpacing * 0.5;
     this.lane2Y = this.RHYTHM_GAME_TOP + laneSpacing * 1.5;
     this.lane3Y = this.RHYTHM_GAME_TOP + laneSpacing * 2.5;
     this.lane4Y = this.RHYTHM_GAME_TOP + laneSpacing * 3.5;
 
-    // 기준선 (수직선) 생성 - 리듬게임 영역 전체 높이로 확장
-    this.add.line(0, 0, this.HIT_LINE_X, this.RHYTHM_GAME_TOP, this.HIT_LINE_X, this.RHYTHM_GAME_BOTTOM, 0xffffff, 3).setOrigin(0);
+    // 기준선 (수직선) - 진한 베이지/브라운 계열
+    this.add.line(0, 0, this.HIT_LINE_X, this.RHYTHM_GAME_TOP, this.HIT_LINE_X, this.RHYTHM_GAME_BOTTOM, 0x8d7964, 3).setOrigin(0);
 
-    // 기준선 왼쪽 영역을 덮는 배경 블럭 생성 (높은 우선순위)
+    // 기준선 왼쪽 영역을 덮는 배경 블럭 - 연한 베이지
     const leftBackgroundBlock = this.add.rectangle(
-      this.HIT_LINE_X / 2, // 기준선 왼쪽 영역의 중앙
-      this.cameras.main.height / 2, // 화면 중앙
-      this.HIT_LINE_X, // 기준선까지의 너비
-      this.cameras.main.height, // 화면 전체 높이
-      0x2d2d2d // 연주 영역 배경색과 동일
+      this.HIT_LINE_X / 2,
+      this.cameras.main.height / 2,
+      this.HIT_LINE_X,
+      this.cameras.main.height,
+      0xf3ede7 // Deemo 느낌의 연한 베이지
     ).setOrigin(0.5);
-    
-    // 높은 우선순위로 설정 (다른 블럭들 위에 표시)
     leftBackgroundBlock.setDepth(1000);
 
     this.noteVisualsGroup = this.add.group();
 
-    // 레인별 키 매핑은 SongManager에서 가져온 것을 사용
-    // this.keyLanes는 create() 메서드에서 설정됨
-
-    // === 3개의 보조선(가로선) 추가 (블럭 사이의 경계) ===
+    // 3개의 보조선(가로선) - 연한 회색
     const guideLineYPositions = [this.guideLine1Y, this.guideLine2Y, this.guideLine3Y];
     guideLineYPositions.forEach(y => {
       this.add.line(
         0, 0,
         this.HIT_LINE_X, y, this.SPAWN_X, y,
-        0xcccccc, 0.4 // 연한 회색, 적절한 투명도
+        0xd6d3ce, 0.5 // 연한 회색, 적당한 투명도
       ).setOrigin(0);
     });
 
-    // === 키 입력 표시를 위한 그래픽 객체들 생성 ===
+    // 키 입력 표시 등 나머지 로직은 그대로
     this.keyPressIndicators = {};
     const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
-    
-    // 각 레인별로 키 입력 표시 생성
     for (let lane = 1; lane <= 4; lane++) {
       const key = laneKeys[lane];
       const laneY = this[`lane${lane}Y`];
-      
-      // 레인 전체 높이 계산 (보조선 사이의 공간)
-      const laneHeight = laneSpacing; // 레인 높이의 80% (여백 포함)
-      
-      // 키 입력 표시 (기준선에 물방울 효과)
+      const laneHeight = laneSpacing;
       const splashGraphics = this.add.graphics();
-      
-      // 초기에는 숨김
       splashGraphics.setVisible(false);
-      
       this.keyPressIndicators[key] = {
         graphics: splashGraphics,
         lane: lane,

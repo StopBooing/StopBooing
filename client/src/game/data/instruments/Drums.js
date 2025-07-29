@@ -31,7 +31,7 @@ export default class Drums {
       'crash': 'F2',   // 크래시 심벌 → F2
       'tom1': 'G2',    // 톰1 → G2
       'tom2': 'A2',    // 톰2 → A2
-      'floor_tom': 'B2', // 플로어 톰 → B2
+      'tom3': 'B2',    // 톰3 → B2
       'ride': 'C3'     // 라이드 심벌 → C3
     };
   }

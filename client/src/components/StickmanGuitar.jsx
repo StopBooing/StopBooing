@@ -41,26 +41,14 @@ export default function StickmanGuitar({width, height}) {
         <RiveComponent 
           style={{ 
             width: width, 
-            height: height
+            height: height,
+            transform: 'scale(1.4)',
+            transformOrigin: 'center center'
           }} 
         />
       )}
-      {!RiveComponent && (
-        <div style={{ 
-          width: 400, 
-          height: 650, 
-          border: '1px solid red',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f0f0f0'
-        }}>
-          Rive 컴포넌트 로딩 중...
-        </div>
-      )}
-
       {/* ⑤ Trigger 버튼 */}
-      <button
+      {/* <button
         onClick={() => {
           console.log("Strum 버튼 클릭됨");
           if (playTrigger) {
@@ -73,7 +61,7 @@ export default function StickmanGuitar({width, height}) {
         style={{ marginTop: 12 }}
       >
         Strum !
-      </button>
+      </button> */}
     </div>
   );
 }

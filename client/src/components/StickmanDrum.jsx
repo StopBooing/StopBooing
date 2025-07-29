@@ -77,7 +77,9 @@ export default function StickmanGuitar({width, height}) {
         <RiveComponent 
           style={{ 
             width: width, 
-            height: height
+            height: height,
+            transform: 'scale(1.2)',
+            transformOrigin: 'center center'
           }} 
         />
       )}
@@ -96,7 +98,7 @@ export default function StickmanGuitar({width, height}) {
       )}
 
       {/* ⑤ Trigger 버튼 */}
-      <button
+      {/* <button
         onClick={() => {
           if (rightHitTrigger) {
             rightHitTrigger.fire();
@@ -125,7 +127,7 @@ export default function StickmanGuitar({width, height}) {
         style={{ marginTop: 12 }}
       >
         anoyingTrigger
-      </button>
+      </button> */}
     </div>
   );
 }

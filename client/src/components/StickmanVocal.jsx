@@ -64,12 +64,14 @@ export default function StickmanVocal({width, height}) {
         <RiveComponent 
           style={{ 
             width: width, 
-            height: height
+            height: height,
+            transform: 'scale(1.7)',
+            transformOrigin: 'center center'
           }} 
         />
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center', alignItems: 'center' }}>
-
+{/* 
       <button
         onClick={() => {
           if (legMoveTrigger) {
@@ -109,7 +111,7 @@ export default function StickmanVocal({width, height}) {
         style={{ marginTop: 12 }}
       >
         annoyingTrigger
-      </button>
+      </button> */}
       </div>
     </div>
   );
