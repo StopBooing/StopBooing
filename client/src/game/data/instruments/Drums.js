@@ -3,12 +3,12 @@ import NoteBlock from '../../NoteBlock.js';
 export default class Drums {
   static getLaneKeys() {
     return {
-      1: '3',  // 1번 레인 -> 3키 (스네어)
-      2: 'e',  // 2번 레인 -> e키 (하이햇)
-      3: 'k',  // 3번 레인 -> k키 (킥)
-      4: 'm'    // 4번 레인 -> m키 (크래시)
+      1: 'a',
+      2: 's',
+      3: 'k',
+      4: 'l'
     };
-  }3
+  }
 
   static createSongData(songId) {
     switch (songId) {

@@ -21,8 +21,8 @@ export default function GameContainer({ nickname, song, session }) {
   useEffect(() => {
     const config = {
       type: Phaser.AUTO,
-      width: window.innerWidth,
-      height: window.innerHeight * 0.4, // 40%만 사용!
+      width: window.innerWidth * 0.6,
+      height: window.innerHeight, // 40%만 사용!
       parent: phaserRef.current,
       scene: [JamScene],
       physics: {

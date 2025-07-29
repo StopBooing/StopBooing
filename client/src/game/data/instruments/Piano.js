@@ -3,10 +3,10 @@ import NoteBlock from '../../NoteBlock.js';
 export default class Piano {
   static getLaneKeys() {
     return {
-      1: '3',  // 1번 레인 -> 3키
-      2: 'e',  // 2번 레인 -> e키
-      3: 'k',  // 3번 레인 -> k키
-      4: 'm'   // 4번 레인 -> m키
+      1: 'a',
+      2: 's',
+      3: 'k',
+      4: 'l'
     };
   }
 

@@ -238,12 +238,10 @@ export default class NoteBlock {
   // 정확도 판정
   judgeAccuracy(hitTime) {
     if (!this.expectedHitTime) return 'miss';
-    
     const timeDiff = Math.abs(hitTime - this.expectedHitTime);
-    
-    if (timeDiff <= 0.05) return 'perfect';
-    if (timeDiff <= 0.1) return 'good';
-    if (timeDiff <= 0.2) return 'bad';
+    if (timeDiff <= 0.18) return 'perfect';
+    if (timeDiff <= 0.35) return 'good';
+    if (timeDiff <= 0.5) return 'bad';
     return 'miss';
   }
 
