@@ -30,6 +30,7 @@ export default class NoteBlock {
     this.expectedHitTime = expectedHitTime;
     this.score = score;
     this.combo = combo;
+    this.blockWidth = 0; // 블럭의 너비 (픽셀)
     
     // 블럭 타입 자동 계산 (duration 기반)
     this.blockType = this.calculateBlockType();
@@ -39,6 +40,13 @@ export default class NoteBlock {
     this.holdStartTime = null; // 홀드 시작 시간
     this.holdEndTime = null; // 홀드 종료 시간
     this.holdProgress = 0; // 홀드 진행률 (0~1)
+    this.minHoldTime = this.duration * 0.5; // 최소 홀드 시간 (duration의 50%)
+    this.isHoldTooShort = false; // 홀드가 너무 짧은지 여부
+    
+    // 탭 블럭 홀드 오버 관련 상태
+    this.isTapHoldOver = false; // 탭 블럭을 너무 오래 누르고 있는지 여부
+    this.tapHoldStartTime = null; // 탭 블럭 홀드 시작 시간
+    this.maxTapHoldTime = 0.3; // 탭 블럭 최대 홀드 시간 (초)
     
     // 생성 시간 기록
     this.createdAt = Date.now();
@@ -55,10 +63,17 @@ export default class NoteBlock {
 
   // 홀드 블럭 시작
   startHold(hitTime) {
-    if (this.blockType === 'hold' && !this.isHolding) {
-      this.isHolding = true;
-      this.holdStartTime = hitTime;
-      this.hit(hitTime, 'good'); // 홀드 시작 시 기본 점수
+    if (this.blockType === 'hold') {
+      // 이미 홀드 중이 아닐 때만 홀드 시작
+      if (!this.isHolding) {
+        this.isHolding = true;
+        this.holdStartTime = hitTime;
+        
+        // 시작 타이밍 판정
+        this.startAccuracy = this.judgeAccuracy(hitTime);
+        console.log(`Hold started: ${this.startAccuracy} (${hitTime.toFixed(2)}s)`);
+      }
+      // 늦게 눌렀을 때도 홀드 상태 유지 (이미 홀드 중이면 아무것도 하지 않음)
     }
   }
 
@@ -74,15 +89,44 @@ export default class NoteBlock {
         const actualHoldTime = endTime - this.holdStartTime;
         this.holdProgress = Math.min(1, actualHoldTime / totalHoldTime);
         
-        // 홀드 완료도에 따른 점수 조정
-        if (this.holdProgress >= 0.8) {
-          this.accuracy = 'perfect';
-        } else if (this.holdProgress >= 0.5) {
-          this.accuracy = 'good';
+        // 끝 타이밍 판정
+        const expectedEndTime = this.expectedHitTime + this.duration;
+        const endTimeDiff = Math.abs(endTime - expectedEndTime);
+        
+        let endAccuracy;
+        if (endTime < expectedEndTime - 0.2) {
+          // 너무 일찍 뗌
+          endAccuracy = 'miss';
+        } else if (endTime < expectedEndTime - 0.1) {
+          // 일찍 뗌
+          endAccuracy = 'bad';
+        } else if (endTime > expectedEndTime + 0.2) {
+          // 너무 늦게 뗌
+          endAccuracy = 'bad';
+        } else if (endTime > expectedEndTime + 0.1) {
+          // 늦게 뗌
+          endAccuracy = 'good';
         } else {
-          this.accuracy = 'bad';
+          // 정확한 타이밍
+          endAccuracy = 'perfect';
         }
+        
+        console.log(`Hold ended: ${endAccuracy} (${endTime.toFixed(2)}s, expected: ${expectedEndTime.toFixed(2)}s)`);
+        
+        // 종합 판정: 시작과 끝의 평균 또는 더 나쁜 쪽
+        this.accuracy = this.combineAccuracies(this.startAccuracy, endAccuracy);
+        
+        // 홀드 시간이 너무 짧은 경우 추가 페널티
+        if (actualHoldTime < this.minHoldTime) {
+          this.isHoldTooShort = true;
+          if (this.accuracy === 'perfect') this.accuracy = 'good';
+          else if (this.accuracy === 'good') this.accuracy = 'bad';
+          else this.accuracy = 'miss';
+          console.log(`Hold too short: ${actualHoldTime.toFixed(2)}s < ${this.minHoldTime.toFixed(2)}s`);
+        }
+        
         this.calculateScore();
+        console.log(`Final accuracy: ${this.accuracy}`);
       }
     }
   }
@@ -92,6 +136,59 @@ export default class NoteBlock {
     if (this.blockType === 'hold' && this.isHolding && this.holdStartTime) {
       const elapsed = currentTime - this.holdStartTime;
       this.holdProgress = Math.min(1, elapsed / this.duration);
+    }
+  }
+
+  // 홀드 블럭 실시간 체크 (너무 짧게 누르고 있는지)
+  checkHoldTooShort(currentTime) {
+    if (this.blockType === 'hold' && this.isHolding && this.holdStartTime && !this.isHoldTooShort) {
+      const holdTime = currentTime - this.holdStartTime;
+      if (holdTime < this.minHoldTime) {
+        // 아직 최소 홀드 시간에 도달하지 않음
+        return false;
+      }
+    }
+    return true; // 충분히 홀드했거나 홀드 블럭이 아님
+  }
+
+  // 탭 블럭 홀드 오버 시작
+  startTapHold(hitTime) {
+    if (this.blockType === 'tap' && !this.isTapHoldOver) {
+      this.tapHoldStartTime = hitTime;
+    }
+  }
+
+  // 탭 블럭 홀드 오버 체크
+  checkTapHoldOver(currentTime) {
+    if (this.blockType === 'tap' && this.tapHoldStartTime && !this.isTapHoldOver) {
+      const holdTime = currentTime - this.tapHoldStartTime;
+      if (holdTime > this.maxTapHoldTime) {
+        this.isTapHoldOver = true;
+        // 홀드 오버 시 정확도를 'bad'로 변경하고 점수 감점
+        this.accuracy = 'bad';
+        this.calculateScore();
+        return true; // 홀드 오버 발생
+      }
+    }
+    return false; // 홀드 오버 없음
+  }
+
+  // 탭 블럭 홀드 종료
+  endTapHold(endTime) {
+    if (this.blockType === 'tap' && this.tapHoldStartTime) {
+      const holdTime = endTime - this.tapHoldStartTime;
+      
+      // 홀드 오버가 발생했는지 확인
+      if (holdTime > this.maxTapHoldTime) {
+        this.isTapHoldOver = true;
+        // 홀드 오버 시 정확도를 'bad'로 변경
+        if (this.accuracy === 'perfect' || this.accuracy === 'good') {
+          this.accuracy = 'bad';
+          this.calculateScore();
+        }
+      }
+      
+      this.tapHoldStartTime = null;
     }
   }
 
@@ -196,5 +293,23 @@ export default class NoteBlock {
       score: this.score,
       combo: this.combo
     });
+  }
+
+  // 시작과 끝 정확도를 결합하는 메서드
+  combineAccuracies(startAcc, endAcc) {
+    const accuracyRank = { 'perfect': 4, 'good': 3, 'bad': 2, 'miss': 1 };
+    const startRank = accuracyRank[startAcc] || 1;
+    const endRank = accuracyRank[endAcc] || 1;
+    
+    // 더 나쁜 쪽을 선택 (보수적 판정)
+    const finalRank = Math.min(startRank, endRank);
+    
+    switch (finalRank) {
+      case 4: return 'perfect';
+      case 3: return 'good';
+      case 2: return 'bad';
+      case 1: return 'miss';
+      default: return 'miss';
+    }
   }
 } 

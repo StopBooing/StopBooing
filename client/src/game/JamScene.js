@@ -16,27 +16,28 @@ export default class JamScene extends Phaser.Scene {
     super({ key: 'JamScene' });
     this.bpm = 100;
     this.socket = null;
-    this.myInstrumentName = null; // 'keyboard', 'electric_guitar', 'bass', 'drums' 등
-    this.activeInstrument = null; // 현재 활성화된 악기 컨트롤러 인스턴스
+    this.myInstrumentName = null;
+    this.activeInstrument = null;
     this.pressedKeys = {};
-    this.songManager = songManager; // SongManager 인스턴스
-    this.noteBlocks = []; // NoteBlock 배열
-    this.currentBar = 0; // 마디 추적
+    this.songManager = songManager;
+    this.noteBlocks = [];
+    this.currentBar = 0;
     this.barText = null;
     this.barDuration = 0;
-    this.HIT_LINE_Y = 500;
-    this.SPAWN_Y = 100;
+    this.HIT_LINE_X = 150; // 기준선의 X 위치 (화면 왼쪽) - constructor에서 초기화
+    this.SPAWN_X = 0; // create에서 계산될 예정 (화면 너비 - 50)
     this.noteSpeed = 0;
-    this.scheduledNotes = []; // NoteBlock 객체들을 저장
+    this.previewTimeSec = 2; // ▶ 블록이 화면을 가로질러 이동하는 전체 시간 (초) - constructor에서 초기화
+
+    this.scheduledNotes = [];
     this.keyPositions = {};
-    this.isBarTransitioning = false; // 마디 트랜지션 중복 방지
-    this.countdownStarted = false; // 카운트다운 시작 여부
-    this.audioInitialized = false; // AudioContext 초기화 여부
-    this.countdownTimer = null; // 카운트다운 타이머 객체
-    this.currentCombo = 0; // 현재 콤보 수
-    this.totalScore = 0; // 총 점수
+    this.isBarTransitioning = false;
+    this.countdownStarted = false;
+    this.audioInitialized = false;
+    this.countdownTimer = null;
+    this.currentCombo = 0;
+    this.totalScore = 0;
     
-    // 전역 카운트다운 상태 관리 (Scene 재시작에도 유지)
     if (!window.jamSceneCountdownStarted) {
       window.jamSceneCountdownStarted = false;
     }
@@ -58,28 +59,32 @@ export default class JamScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#2d2d2d');
     this.myInstrumentName = this.game.registry.get('myInstrument');
     
+    // SPAWN_X는 카메라 너비에 의존하므로 create에서 계산
+    this.SPAWN_X = this.cameras.main.width - 50; 
+    
     // SongManager를 통해 곡 데이터 로드
     this.noteBlocks = this.songManager.getSongData(this.myInstrumentName);
-
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
     console.log(`NoteBlocks loaded: ${this.noteBlocks.length}`);
     console.log(`Current song: ${this.songManager.getCurrentSong()}`);
-
-    this.setupTimingGuideUI(); // 먼저 UI 설정 (lane1Y, lane2Y 등 생성)
     
-    // 레인 키 매핑 설정 (Y 좌표와 함께)
+    // noteSpeed 계산은 previewTimeSec과 SPAWN_X에 의존하므로 create 또는 startSongTracker에서
+    const travelDistance = this.SPAWN_X - this.HIT_LINE_X;
+    this.noteSpeed = travelDistance / this.previewTimeSec; // ▶ noteSpeed 계산
+
+    this.setupTimingGuideUI();
+    
     const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
     this.keyLanes = {
-      [laneKeys[1]]: this.lane1Y,  // 1번 레인
-      [laneKeys[2]]: this.lane2Y,  // 2번 레인
-      [laneKeys[3]]: this.lane3Y,  // 3번 레인
-      [laneKeys[4]]: this.lane4Y   // 4번 레인
+      [laneKeys[1]]: this.lane1Y,
+      [laneKeys[2]]: this.lane2Y,
+      [laneKeys[3]]: this.lane3Y,
+      [laneKeys[4]]: this.lane4Y
     };
     
     console.log('Lane Keys:', laneKeys);
     console.log('Key Lanes:', this.keyLanes);
-
-    this.createInstrument(); // 악기 컨트롤러 생성
+    this.createInstrument();
     this.setupKeyboardInput();
   }
 
@@ -162,7 +167,22 @@ export default class JamScene extends Phaser.Scene {
     // 기준선 (수직선) 생성 - 리듬게임 영역 전체 높이로 확장
     this.add.line(0, 0, this.HIT_LINE_X, this.RHYTHM_GAME_TOP, this.HIT_LINE_X, this.RHYTHM_GAME_BOTTOM, 0xffffff, 3).setOrigin(0);
 
+    // 기준선 왼쪽 영역을 덮는 배경 블럭 생성 (높은 우선순위)
+    const leftBackgroundBlock = this.add.rectangle(
+      this.HIT_LINE_X / 2, // 기준선 왼쪽 영역의 중앙
+      this.cameras.main.height / 2, // 화면 중앙
+      this.HIT_LINE_X, // 기준선까지의 너비
+      this.cameras.main.height, // 화면 전체 높이
+      0x2d2d2d // 연주 영역 배경색과 동일
+    ).setOrigin(0.5);
+    
+    // 높은 우선순위로 설정 (다른 블럭들 위에 표시)
+    leftBackgroundBlock.setDepth(1000);
+
     this.noteVisualsGroup = this.add.group();
+
+    // 레인별 키 매핑은 SongManager에서 가져온 것을 사용
+    // this.keyLanes는 create() 메서드에서 설정됨
 
     // === 3개의 보조선(가로선) 추가 (블럭 사이의 경계) ===
     const guideLineYPositions = [this.guideLine1Y, this.guideLine2Y, this.guideLine3Y];
@@ -183,21 +203,17 @@ export default class JamScene extends Phaser.Scene {
       const key = laneKeys[lane];
       const laneY = this[`lane${lane}Y`];
       
-      // 키 입력 표시 (기준선 부분에 작은 사각형)
-      const indicator = this.add.rectangle(
-        this.HIT_LINE_X - 10, // 기준선 왼쪽에 위치
-        laneY,
-        20, // 가로 길이
-        30, // 세로 길이
-        0x00ff00, // 초록색 (기본)
-        0.7 // 투명도
-      ).setOrigin(0.5);
+      // 레인 전체 높이 계산 (보조선 사이의 공간)
+      const laneHeight = laneSpacing; // 레인 높이의 80% (여백 포함)
+      
+      // 키 입력 표시 (기준선에 물방울 효과)
+      const splashGraphics = this.add.graphics();
       
       // 초기에는 숨김
-      indicator.setVisible(false);
+      splashGraphics.setVisible(false);
       
       this.keyPressIndicators[key] = {
-        graphics: indicator,
+        graphics: splashGraphics,
         lane: lane,
         isPressed: false
       };
@@ -253,55 +269,68 @@ export default class JamScene extends Phaser.Scene {
   spawnNoteVisual(noteBlock) {
     const yPos = this.keyLanes[noteBlock.key] || this.cameras.main.height / 2;
     
-    // 디버깅: 키와 Y 위치 확인
     if (!this.keyLanes[noteBlock.key]) {
       console.warn(`Key '${noteBlock.key}' not found in keyLanes:`, this.keyLanes);
     }
 
-    // 기준선 한칸의 크기 계산 (laneSpacing과 동일)
     const gameHeight = this.RHYTHM_GAME_BOTTOM - this.RHYTHM_GAME_TOP;
-    const laneSpacing = gameHeight / 4; // 기준선 한칸의 크기
-    const baseHeight = laneSpacing; // 블럭 높이를 기준선 한칸 크기와 같게 설정
+    const laneSpacing = gameHeight / 4;
+    const baseHeight = laneSpacing; 
     
-    // 블럭 타입에 따른 디자인 적용
     let visualBlock;
-    let blockWidth = 0; // 블럭 너비를 저장할 변수
+    let blockWidth = 0; 
+    
+    // 블록 간 시각적 간격을 위한 마진 값 (픽셀 단위)
+    const spacingMargin = 10; // 예를 들어 2픽셀씩 줄입니다. 필요에 따라 조절하세요.
     
     if (noteBlock.blockType === 'tap') {
-      // 탭 블럭: 짧고 굵은 디자인
-      blockWidth = 20; // 고정된 짧은 너비
-      visualBlock = this.add.rectangle(0, 0, blockWidth, baseHeight, 0x00ff00).setOrigin(0, 0.5);
-      
-      // 탭 블럭은 더 진한 색상으로 구분
-      visualBlock.setFillStyle(0x00cc00);
+      blockWidth = 40; 
+      visualBlock = this.add.rectangle(0, 0, blockWidth, baseHeight, 0x00cc00).setOrigin(0, 0.5); 
       
     } else if (noteBlock.blockType === 'hold') {
-      // 홀드 블럭: 길고 홀드형 디자인
-      const durationMultiplier = 2; // 길이 배수 (조절 가능)
-      const minWidth = 30; // 최소 너비
-      blockWidth = Math.max(minWidth, noteBlock.duration * 100 * durationMultiplier);
+      // 홀드 블럭: duration에 비례하여 너비 계산
+      blockWidth = this.noteSpeed * noteBlock.duration; 
+      const minWidth = 40; 
+      blockWidth = Math.max(minWidth, blockWidth); 
       
-      // 홀드 블럭은 그라데이션 효과를 위해 여러 사각형으로 구성
-      const holdBlock = this.add.container(0, 0);
+      // ▶ 핵심 수정: 계산된 너비에서 마진만큼 빼줍니다.
+      blockWidth = Math.max(minWidth, blockWidth - spacingMargin); // 최소 너비도 고려하여 음수가 되지 않도록
+
+      // Graphics 객체를 생성하고 그 안에 블록을 그립니다.
+      const holdGraphics = this.add.graphics();
       
-      // 메인 블럭 (진한 색상)
-      const mainBlock = this.add.rectangle(0, 0, blockWidth, baseHeight, 0x0088ff).setOrigin(0, 0.5);
+      // 메인 블럭 (진한 파란색)
+      holdGraphics.fillStyle(0x0088ff, 1);
+      holdGraphics.fillRect(0, -baseHeight / 2, blockWidth, baseHeight); 
       
-      // 홀드 블럭의 끝 부분 (밝은 색상으로 구분)
-      const endBlock = this.add.rectangle(blockWidth - 5, 0, 10, baseHeight, 0x00aaff).setOrigin(0, 0.5);
+      // 홀드 블럭의 끝 부분 (밝은 파란색)
+      holdGraphics.fillStyle(0x00aaff, 1);
+      holdGraphics.fillRect(blockWidth - 10, -baseHeight / 2, 10, baseHeight);
       
-      // 홀드 블럭의 시작 부분 (더 밝은 색상)
-      const startBlock = this.add.rectangle(5, 0, 10, baseHeight, 0x00ccff).setOrigin(0, 0.5);
+      // 홀드 블럭의 시작 부분 (더 밝은 파란색)
+      holdGraphics.fillStyle(0x00ccff, 1);
+      holdGraphics.fillRect(0, -baseHeight / 2, 10, baseHeight);
       
-      holdBlock.add([mainBlock, endBlock, startBlock]);
-      visualBlock = holdBlock;
+      // 가운데 연결선 (사각형 안에 가로선)
+      holdGraphics.lineStyle(2, 0xffffff, 0.8); // 흰색 선, 약간 투명
+      holdGraphics.beginPath();
+      holdGraphics.moveTo(0, 0); // 사각형 왼쪽 중앙
+      holdGraphics.lineTo(blockWidth, 0); // 사각형 오른쪽 중앙
+      holdGraphics.strokePath();
+      
+      // 연결선 위에 작은 점들 (홀드 블럭임을 표시)
+      const dotCount = Math.floor(blockWidth / 20); // 20px마다 점 하나
+      for (let i = 1; i < dotCount; i++) {
+        const x = (blockWidth / dotCount) * i;
+        holdGraphics.fillStyle(0xffffff, 0.9);
+        holdGraphics.fillCircle(x, 0, 2);
+      }
+      
+      visualBlock = holdGraphics;
     }
     
-    // 디버깅: 블럭 타입과 크기 정보 출력
-    console.log(`NoteBlock 생성: type=${noteBlock.blockType}, duration=${noteBlock.duration}s, width=${blockWidth}px, note=${noteBlock.note}`);
+    noteBlock.blockWidth = blockWidth;
 
-    // 컨테이너를 화면 오른쪽에서 시작하도록 설정
-    // 블럭의 시작점이 SPAWN_X에 위치하도록 조정
     const container = this.add.container(this.SPAWN_X, yPos, [visualBlock]);
     this.noteVisualsGroup.add(container);
     
@@ -377,6 +406,9 @@ export default class JamScene extends Phaser.Scene {
           const accuracy = hitNoteBlock.judgeAccuracy(now);
           hitNoteBlock.hit(now, accuracy);
           
+          // 탭 블럭 홀드 오버 체크 시작
+          hitNoteBlock.startTapHold(now);
+          
           // 악기 연주
           const notes = hitNoteBlock.note.split(',');
           this.activeInstrument.handleAttack(notes,keyId);
@@ -419,20 +451,43 @@ export default class JamScene extends Phaser.Scene {
       // 키를 떼면 해당 소리를 멈춥니다.
       const pressedData = this.pressedKeys[code];
       if (pressedData && this.activeInstrument) {
+        const now = Tone.now();
+        
         // 홀드 블럭인 경우 홀드 종료 처리
         if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'hold') {
-          const now = Tone.now();
+          // 홀드 종료 전에 조기 해제 여부 확인
+          const wasReleasedEarly = pressedData.noteBlock.expectedHitTime && 
+                                  now < pressedData.noteBlock.expectedHitTime + pressedData.noteBlock.duration;
+          
           pressedData.noteBlock.endHold(now);
+          
+          // 조기 해제 시 즉시 miss 텍스트 표시
+          if (wasReleasedEarly) {
+            this.showAccuracyText('miss', pressedData.noteBlock.lane);
+            console.log(`Hold Block released early: ${pressedData.noteBlock.toString()}, Miss displayed immediately`);
+          }
           
           // 홀드 완료도에 따른 점수 및 콤보 업데이트
           this.updateComboAndScore(pressedData.noteBlock.accuracy);
           
-          // 홀드 완료 메시지 표시
-          const holdMessage = pressedData.noteBlock.holdProgress >= 0.8 ? 'PERFECT HOLD' : 
-                             pressedData.noteBlock.holdProgress >= 0.5 ? 'GOOD HOLD' : 'BAD HOLD';
-          this.showAccuracyText(holdMessage, pressedData.noteBlock.lane);
+          // 조기 해제가 아닌 경우에만 정확도 메시지 표시 (중복 방지)
+          if (!wasReleasedEarly) {
+            this.showAccuracyText(pressedData.noteBlock.accuracy, pressedData.noteBlock.lane);
+          }
           
-          console.log(`Hold Block ended: ${pressedData.noteBlock.toString()}, Progress: ${Math.round(pressedData.noteBlock.holdProgress * 100)}%, Score: ${pressedData.noteBlock.score}`);
+          console.log(`Hold Block ended: ${pressedData.noteBlock.toString()}, Progress: ${Math.round(pressedData.noteBlock.holdProgress * 100)}%, Score: ${pressedData.noteBlock.score}, Too Short: ${pressedData.noteBlock.isHoldTooShort}, Released Early: ${pressedData.noteBlock.accuracy === 'miss'}`);
+        }
+        
+        // 탭 블럭인 경우 홀드 오버 체크
+        if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'tap') {
+          pressedData.noteBlock.endTapHold(now);
+          
+          // 홀드 오버가 발생했다면 점수 및 콤보 재계산
+          if (pressedData.noteBlock.isTapHoldOver) {
+            this.updateComboAndScore(pressedData.noteBlock.accuracy);
+            this.showAccuracyText(pressedData.noteBlock.accuracy, pressedData.noteBlock.lane);
+            console.log(`Tap Block hold over: ${pressedData.noteBlock.toString()}, Score: ${pressedData.noteBlock.score}`);
+          }
         }
         
         this.activeInstrument.handleRelease(pressedData.chord);
@@ -443,10 +498,18 @@ export default class JamScene extends Phaser.Scene {
 
   // NoteBlock에서 히트할 노트 찾기
   findNoteBlockToHit(keyId, currentTime) {
-    const hitWindow = 0.2; // 히트 윈도우 (초)
-    
     return this.scheduledNotes.find(noteBlock => {
       if (noteBlock.key !== keyId || noteBlock.isHit) return false;
+      
+      // 블럭 타입에 따른 히트 윈도우 설정
+      let hitWindow;
+      if (noteBlock.blockType === 'hold') {
+        // 홀드 블럭: 더 넓은 히트 윈도우 (홀드 지속 시간만큼)
+        hitWindow = noteBlock.duration + 0.2; // 홀드 지속 시간 + 0.2초 여유
+      } else {
+        // 탭 블럭: 기본 히트 윈도우
+        hitWindow = 0.2;
+      }
       
       const timeDiff = Math.abs(currentTime - noteBlock.expectedHitTime);
       return timeDiff <= hitWindow;
@@ -501,7 +564,9 @@ export default class JamScene extends Phaser.Scene {
     return laneKeys[lane] || '3';
   }
 
-  // 키 입력 표시를 제어하는 메서드
+
+
+  // 키 입력 표시를 제어하는 메서드 (물방울 효과)
   showKeyPressIndicator(keyId, isPressed) {
     const indicator = this.keyPressIndicators[keyId];
     if (!indicator) return;
@@ -509,13 +574,43 @@ export default class JamScene extends Phaser.Scene {
     indicator.isPressed = isPressed;
     
     if (isPressed) {
-      // 키를 누르고 있을 때: 빨간색으로 변경하고 표시
-      indicator.graphics.setFillStyle(0xff0000, 0.8);
-      indicator.graphics.setVisible(true);
-    } else {
-      // 키를 떼었을 때: 숨김
-      indicator.graphics.setVisible(false);
+      // 키를 누를 때: 물방울이 터지는 효과
+      this.createSplashEffect(indicator.lane);
     }
+  }
+
+  // 물방울이 터지는 효과를 생성하는 메서드
+  createSplashEffect(lane) {
+    const laneY = this[`lane${lane}Y`];
+    const splashX = this.HIT_LINE_X;
+    const splashY = laneY;
+    
+    // 물방울 효과를 위한 컨테이너 생성 (고정된 위치)
+    const splashContainer = this.add.container(splashX, splashY);
+    
+    // 높은 우선순위 설정 (기준선 왼쪽 배경 블럭보다 위에 표시)
+    splashContainer.setDepth(2000);
+    
+    // 중앙 원형 효과
+    const centerCircle = this.add.graphics();
+    centerCircle.fillStyle(0xffffff, 0.8);
+    centerCircle.fillCircle(0, 0, 25);
+    splashContainer.add(centerCircle);
+    
+    // 중앙 원형 애니메이션: 크기 확대 및 투명도 감소
+    this.tweens.add({
+      targets: centerCircle,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      alpha: 0,
+      duration: 400,
+      ease: 'Power2'
+    });
+    
+    // 전체 컨테이너 제거
+    this.time.delayedCall(450, () => {
+      splashContainer.destroy();
+    });
   }
 
   // 놓친 노트 처리 메서드
@@ -534,6 +629,8 @@ export default class JamScene extends Phaser.Scene {
     
     console.log(`NoteBlock missed: ${noteBlock.toString()}, Score: ${noteBlock.score}`);
   }
+
+
 
   // 콤보 및 점수 업데이트 메서드
   updateComboAndScore(accuracy) {
@@ -584,59 +681,143 @@ export default class JamScene extends Phaser.Scene {
   update(time, delta) {
     if (Tone.Transport.state !== 'started') return;
     
-    const now = Tone.now();
-    const travelTimeSeconds = this.previewTimeSec;
-
+    const now = Tone.now(); // AudioContext 시간
+    // travelTimeSeconds (previewTimeSec)는 constructor 또는 create에서 설정됨.
+    // this.noteSpeed도 constructor 또는 create에서 설정됨.
+    
     this.scheduledNotes.forEach(noteBlock => {
       if (!noteBlock.visualObject || !noteBlock.visualObject.active) {
         return;
       }
 
-      // 홀드 블럭 진행률 업데이트 및 시각적 피드백
-      if (noteBlock.blockType === 'hold' && noteBlock.isHolding) {
+      // 홀드 블럭 진행률 업데이트 및 시각적 피드백 (홀드 중이거나 홀드가 끝나지 않은 경우)
+      if (noteBlock.blockType === 'hold' && (noteBlock.isHolding || noteBlock.holdStartTime)) {
         noteBlock.updateHoldProgress(now);
         
-        // 홀드 중일 때 블럭 색상 변경 (시각적 피드백)
         if (noteBlock.visualObject && noteBlock.visualObject.list) {
-          // 컨테이너 내의 메인 블럭 색상 변경
-          const mainBlock = noteBlock.visualObject.list[0];
-          if (mainBlock && mainBlock.setFillStyle) {
-            // 진행률에 따라 색상 변화 (파란색 → 노란색 → 주황색)
-            if (noteBlock.holdProgress >= 0.8) {
-              mainBlock.setFillStyle(0x00ff00); // 완료 시 초록색
-            } else if (noteBlock.holdProgress >= 0.5) {
-              mainBlock.setFillStyle(0xffff00); // 진행 중 노란색
+          const graphics = noteBlock.visualObject.list[0]; // Graphics 객체
+          if (graphics) {
+            const holdTime = now - noteBlock.holdStartTime;
+            const isTooShort = holdTime < noteBlock.minHoldTime;
+            
+            // 이전 그래픽을 지우고 새로운 디자인으로 다시 그리기
+            graphics.clear();
+            
+            // spawnNoteVisual과 동일한 baseHeight 계산 사용
+            const gameHeight = this.RHYTHM_GAME_BOTTOM - this.RHYTHM_GAME_TOP;
+            const laneSpacing = gameHeight / 4;
+            const baseHeight = laneSpacing;
+            
+            // 홀드 블럭이 기준선에 닿고 있는지 확인 (홀드 진행 중에는 계속 주황색 유지)
+            const timeToHitStart = noteBlock.expectedHitTime - now;
+            const timeToEndHit = timeToHitStart - (noteBlock.blockWidth / this.noteSpeed);
+            const isAtHitLine = Math.abs(timeToHitStart) <= 0.1; // 기준선 근처 (0.1초 이내)
+            const isEndAtHitLine = Math.abs(timeToEndHit) <= 0.1; // 끝점이 기준선 근처 (0.1초 이내)
+            const isHoldInProgress = noteBlock.isHolding && noteBlock.holdStartTime; // 홀드 진행 중인지 확인
+            
+            // 홀드 블럭이 기준선을 지나갔는지 확인 (늦게 눌렀을 때도 주황색으로 바뀌도록)
+            const isPastHitLine = timeToHitStart < 0; // 기준선을 지나갔는지 확인
+            const isWithinHoldWindow = timeToHitStart > -noteBlock.duration; // 홀드 윈도우 내에 있는지 확인
+            
+            // 색상 결정: 홀드 진행 중일 때만 주황색, 그 외에는 파란색
+            let mainColor, startColor, endColor, lineColor;
+            if (isHoldInProgress) {
+              mainColor = 0xff8800; // 주황색 (홀드 중)
+              startColor = 0xff8800;
+              endColor = 0xff8800;
+              lineColor = 0xffffff; // 흰색 선
             } else {
-              mainBlock.setFillStyle(0xff8800); // 시작 시 주황색
+              mainColor = 0x0088ff; // 기본 파란색
+              startColor = 0x00ccff; // 밝은 파란색
+              endColor = 0x00aaff; // 중간 파란색
+              lineColor = 0xffffff; // 흰색 선
+            }
+            
+            // 메인 블럭
+            graphics.fillStyle(mainColor, 1);
+            graphics.fillRect(0, -baseHeight / 2, noteBlock.blockWidth, baseHeight);
+            
+            // 홀드 블럭의 끝 부분
+            graphics.fillStyle(endColor, 1);
+            graphics.fillRect(noteBlock.blockWidth - 10, -baseHeight / 2, 10, baseHeight);
+            
+            // 홀드 블럭의 시작 부분
+            graphics.fillStyle(startColor, 1);
+            graphics.fillRect(0, -baseHeight / 2, 10, baseHeight);
+            
+            // 가운데 연결선 (사각형 안에 가로선)
+            graphics.lineStyle(2, lineColor, 0.8);
+            graphics.beginPath();
+            graphics.moveTo(0, 0);
+            graphics.lineTo(noteBlock.blockWidth, 0);
+            graphics.strokePath();
+            
+            // 연결선 위에 작은 점들
+            const dotCount = Math.floor(noteBlock.blockWidth / 20);
+            for (let i = 1; i < dotCount; i++) {
+              const x = (noteBlock.blockWidth / dotCount) * i;
+              graphics.fillStyle(lineColor, 0.9);
+              graphics.fillCircle(x, 0, 2);
             }
           }
         }
       }
-
-      const timeToHit = noteBlock.expectedHitTime - now;
-
-      // 노트가 화면에 보여야 하는 시간 범위 내에 있는지 확인
-      if (timeToHit >= -0.1 && timeToHit <= travelTimeSeconds) {
-        // 오른쪽에서 왼쪽으로 이동하는 계산
-        const progress = 1 - (timeToHit / travelTimeSeconds);
-        const x = this.SPAWN_X - (this.SPAWN_X - this.HIT_LINE_X) * progress;
-        noteBlock.visualObject.x = x;
-        
-        // 블럭의 시작점이 히트 라인을 지나간 노트는 MISS 처리
-        // 블럭의 시작점이 히트 라인을 지나면 MISS
-        if (timeToHit < -0.1 && !noteBlock.isHit) {
-          this.handleMissedNote(noteBlock, now);
+      // 탭 블럭 홀드 오버 실시간 체크 및 시각적 피드백 (기존과 동일)
+      if (noteBlock.blockType === 'tap' && noteBlock.isHit && !noteBlock.isTapHoldOver) {
+        const holdOverOccurred = noteBlock.checkTapHoldOver(now);
+        if (holdOverOccurred) {
+          this.updateComboAndScore(noteBlock.accuracy);
+          this.showAccuracyText(noteBlock.accuracy, noteBlock.lane);
+          if (noteBlock.visualObject && noteBlock.visualObject.setFillStyle) { // Graphics 객체에 직접 setFillStyle 사용
+            noteBlock.visualObject.setFillStyle(0xff0000); 
+          }
         }
-      } else if (timeToHit < -0.1) {
-        // 기준선을 지나간 노트는 제거3
+      }
+      // 탭 블럭 홀드 오버 경고 (0.2초 이상 누르면 노란색으로 경고)
+      if (noteBlock.blockType === 'tap' && noteBlock.isHit && !noteBlock.isTapHoldOver && noteBlock.tapHoldStartTime) {
+        const holdTime = now - noteBlock.tapHoldStartTime;
+        if (holdTime > 0.2 && holdTime <= noteBlock.maxTapHoldTime) {
+          if (noteBlock.visualObject && noteBlock.visualObject.setFillStyle) { // Graphics 객체에 직접 setFillStyle 사용
+            noteBlock.visualObject.setFillStyle(0xffff00); 
+          }
+        }
+      }
+
+      // 노트의 시작점이 기준선에 도달하는 시간을 기준으로 현재 진행도를 계산합니다.
+      // noteBlock.expectedHitTime은 노트의 '왼쪽 끝'이 HIT_LINE_X에 닿는 시간입니다.
+      const timeToHitStart = noteBlock.expectedHitTime - now; 
+      
+      // 노트가 화면 전체를 이동하는 시간 (SPAWN_X에서 HIT_LINE_X까지)
+      const totalTravelTime = this.previewTimeSec; 
+
+      // 현재 진행도 (0 ~ 1.0)
+      const progress = 1 - (timeToHitStart / totalTravelTime); 
+      
+      // 노트의 X 위치 계산: SPAWN_X에서 HIT_LINE_X까지 이동
+      // noteBlock.visualObject는 컨테이너입니다. setX() 사용.
+      const x = this.SPAWN_X - (this.SPAWN_X - this.HIT_LINE_X) * progress;
+      noteBlock.visualObject.setX(x);
+      
+      // ===== 노트 파괴 및 MISS 판정 로직 =====
+      // 노트의 '오른쪽 끝'이 HIT_LINE_X를 완전히 지나갔는지 판단합니다.
+      // 노트의 오른쪽 끝 X 좌표 = visualObject.x + noteBlock.blockWidth
+      const noteRightEdgeX = noteBlock.visualObject.x + noteBlock.blockWidth;
+      
+      // 홀드 블럭: 끝점이 기준선을 지나면 MISS 또는 파괴
+      // 탭 블럭: 시작점이 기준선을 지나면 MISS 또는 파괴
+      
+      // 노트가 기준선을 완전히 통과했는지 확인하는 조건
+      // 블록의 오른쪽 끝(x + width)이 기준선(HIT_LINE_X)을 넘어섰을 때
+      if (noteRightEdgeX < this.HIT_LINE_X) {
+        // 이미 히트하지 않은 노트라면 MISS 처리
         if (!noteBlock.isHit) {
           this.handleMissedNote(noteBlock, now);
         }
+        // 블록 파괴
         noteBlock.visualObject.destroy();
         noteBlock.visualObject = null;
       }
     });
-
     this.scheduledNotes = this.scheduledNotes.filter(noteBlock => noteBlock.visualObject !== null);
   }
 }

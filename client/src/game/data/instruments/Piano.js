@@ -31,28 +31,28 @@ export default class Piano {
     // 마디 1-4: 다양한 duration 패턴 (탭과 홀드 블럭 테스트)
     const testPattern = [
       // 마디 1
-      { time: 1, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 1 },
+      { time: 1, notes: ['C4', 'E4', 'G4'], lane: 1, duration: 1, beat: 1 },
       { time: 2, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 2 },
-      { time: 3, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 3 },
-      { time: 4, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 4 },
+      { time: 3, notes: ['C4', 'E4', 'G4'], lane: 3, duration: 1, beat: 3 },
+      { time: 4, notes: ['C4', 'E4', 'G4'], lane: 4, duration: 1, beat: 4 },
       
       // 마디 2
       { time: 5, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 1 },
-      { time: 6, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 2 },
-      { time: 7, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 3 },
-      { time: 8, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 4 },
+      { time: 6, notes: ['C4', 'F4', 'A4'], lane: 2, duration: 1, beat: 2 },
+      { time: 7, notes: ['C4', 'F4', 'A4'], lane: 3, duration: 1, beat: 3 },
+      { time: 8, notes: ['C4', 'F4', 'A4'], lane: 4, duration: 1, beat: 4 },
       
       // 마디 3
-      { time: 9, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 1 },
+      { time: 9, notes: ['C4', 'E4', 'G4'], lane: 1, duration: 1, beat: 1 },
       { time: 10, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 2 },
-      { time: 11, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 3 },
-      { time: 12, notes: ['C4', 'E4', 'G4'], lane: 2, duration: 1, beat: 4 },
+      { time: 11, notes: ['C4', 'E4', 'G4'], lane: 3, duration: 1, beat: 3 },
+      { time: 12, notes: ['C4', 'E4', 'G4'], lane: 4, duration: 1, beat: 4 },
       
       // 마디 4
       { time: 13, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 1 },
-      { time: 14, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 2 },
-      { time: 15, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 3 },
-      { time: 16, notes: ['C4', 'F4', 'A4'], lane: 1, duration: 1, beat: 4 }
+      { time: 14, notes: ['C4', 'F4', 'A4'], lane: 2, duration: 1, beat: 2 },
+      { time: 15, notes: ['C4', 'F4', 'A4'], lane: 3, duration: 1, beat: 3 },
+      { time: 16, notes: ['C4', 'F4', 'A4'], lane: 4, duration: 1, beat: 4 }
     ];
     
     testPattern.forEach(pattern => {
