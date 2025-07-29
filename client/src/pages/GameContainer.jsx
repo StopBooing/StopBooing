@@ -12,6 +12,7 @@ export default function GameContainer({ nickname, song, session }) {
   const phaserRef = useRef(null);
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
+  const [accuracy, setAccuracy] = useState(100); // 정확도 (100%로 시작)
 
   // 커튼 애니메이션 상태
   const [curtainOpen, setCurtainOpen] = useState(false);
@@ -32,7 +33,15 @@ export default function GameContainer({ nickname, song, session }) {
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
-    game.registry.set('myInstrument', 'drum');
+    game.registry.set('myInstrument', 'keyboard');
+    
+    // 정확도 업데이트를 위한 이벤트 리스너 추가
+    const handleAccuracyUpdate = (newAccuracy) => {
+      setAccuracy(newAccuracy);
+    };
+    
+    // 게임에서 정확도 업데이트 이벤트를 받을 수 있도록 설정
+    game.events.on('accuracyUpdate', handleAccuracyUpdate);
 
     const handleResize = () => {
       if (game && game.scale) {
@@ -49,6 +58,7 @@ export default function GameContainer({ nickname, song, session }) {
     return () => {
       window.removeEventListener('resize', handleResize);
       clearInterval(timer);
+      game.events.off('accuracyUpdate', handleAccuracyUpdate);
       game.destroy(true);
     };
   }, []);
@@ -108,24 +118,13 @@ export default function GameContainer({ nickname, song, session }) {
           <div style={{ fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: '#bfae9c' }}>
             {timeLeft} / {TOTAL_TIME}
           </div>
-        </div>
-        {/* 가운데: 주요 버튼 */}
-        <div style={{ display: 'flex', gap: 18 }}>
-          <button title="재생" style={{
-            fontSize: 22, background: '#23222a', color: '#bfae9c', border: '1.5px solid #6e5e4e', borderRadius: 16,
-            boxShadow: '0 2px 8px #0006', padding: '6px 18px', fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s', outline: 'none'
-          }} onClick={handlePlay}>▶️</button>
-          <button title="초기화" style={{
-            fontSize: 22, background: '#23222a', color: '#bfae9c', border: '1.5px solid #6e5e4e', borderRadius: 16,
-            boxShadow: '0 2px 8px #0006', padding: '6px 18px', fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s', outline: 'none'
-          }}>🔄</button>
-          <button title="다음" style={{
-            fontSize: 22, background: '#23222a', color: '#bfae9c', border: '1.5px solid #6e5e4e', borderRadius: 16,
-            boxShadow: '0 2px 8px #0006', padding: '6px 18px', fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s', outline: 'none'
-          }}>⏭️</button>
+
+        </div>  
+        {/* 가운데: 정확도 표시 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 40, fontWeight: 'bold', color: '#2196f3' }}>
+            {accuracy.toFixed(1)}%
+          </span>
         </div>
         {/* 오른쪽: 홈/설정 */}
         <div style={{ display: 'flex', gap: 18 }}>

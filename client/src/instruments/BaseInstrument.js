@@ -1,3 +1,5 @@
+import * as Tone from 'tone';
+
 /**
  * 모든 악기 컨트롤러의 기본 설계도 역할을 하는 기본 클래스입니다.
  * 각 악기 클래스는 이 클래스를 상속받아 자신만의 로직을 구현해야 합니다.
@@ -34,10 +36,19 @@ export default class BaseInstrument {
   /**
    * 키보드 'keydown' 이벤트가 발생했을 때 호출될 함수입니다.
    * @param {string[]} chord - 연주할 음(코드) 배열 (예: ['C4', 'E4'])
+   * @param {string} keyId - 키 식별자 (hold 블럭 판별용)
    */
-  handleAttack(chord) {
+  handleAttack(chord, keyId = null) {
     if (!this.isLoaded || !this.instrument) return;
-    this.instrument.triggerAttack(chord);
+    
+    // hold 블럭인 경우 더 긴 sustain을 적용
+    if (keyId && this.isHoldBlock(keyId)) {
+      // hold 블럭: sustain을 길게 설정하여 키를 누르고 있는 동안 계속 소리가 나도록 함
+      this.instrument.triggerAttack(chord, undefined, 10); // 10초 sustain
+    } else {
+      // tap 블럭: 기본 sustain
+      this.instrument.triggerAttack(chord);
+    }
   }
 
   /**
@@ -47,5 +58,17 @@ export default class BaseInstrument {
   handleRelease(chord) {
     if (!this.isLoaded || !this.instrument) return;
     this.instrument.triggerRelease(chord);
+  }
+
+  /**
+   * 해당 키가 hold 블럭인지 판별하는 메서드
+   * @param {string} keyId - 키 식별자
+   * @returns {boolean} hold 블럭 여부
+   */
+  isHoldBlock(keyId) {
+    // 현재 시간에서 해당 키에 대한 hold 블럭이 있는지 확인
+    const currentTime = Tone.now(); // Tone.js 시간 사용
+    const noteBlock = this.scene.findNoteBlockToHit(keyId, currentTime);
+    return noteBlock && noteBlock.blockType === 'hold';
   }
 } 

@@ -48,6 +48,15 @@ export default class NoteBlock {
     this.tapHoldStartTime = null; // 탭 블럭 홀드 시작 시간
     this.maxTapHoldTime = 0.3; // 탭 블럭 최대 홀드 시간 (초)
     
+    // 홀드 블럭 시작/끝 판정 저장
+    this.startAccuracy = null;
+    this.endAccuracy = null;
+    this.endAccuracyShown = false; // 끝 판정 텍스트가 이미 표시되었는지 확인
+    this.startAccuracyShown = false; // 시작 판정 텍스트가 이미 표시되었는지 확인
+    
+    // Hold 블럭 완료 상태
+    this.isCompleted = false; // Hold 블럭이 완료되었는지 여부
+    
     // 생성 시간 기록
     this.createdAt = Date.now();
     
@@ -68,6 +77,8 @@ export default class NoteBlock {
       if (!this.isHolding) {
         this.isHolding = true;
         this.holdStartTime = hitTime;
+        this.isHit = true; // Hold 블럭 시작 시 isHit을 true로 설정
+        this.hitTime = hitTime; // 실제 히트 시간 설정
         
         // 시작 타이밍 판정
         this.startAccuracy = this.judgeAccuracy(hitTime);
@@ -111,22 +122,19 @@ export default class NoteBlock {
           endAccuracy = 'perfect';
         }
         
+        this.endAccuracy = endAccuracy;
         console.log(`Hold ended: ${endAccuracy} (${endTime.toFixed(2)}s, expected: ${expectedEndTime.toFixed(2)}s)`);
         
-        // 종합 판정: 시작과 끝의 평균 또는 더 나쁜 쪽
-        this.accuracy = this.combineAccuracies(this.startAccuracy, endAccuracy);
+
         
-        // 홀드 시간이 너무 짧은 경우 추가 페널티
-        if (actualHoldTime < this.minHoldTime) {
-          this.isHoldTooShort = true;
-          if (this.accuracy === 'perfect') this.accuracy = 'good';
-          else if (this.accuracy === 'good') this.accuracy = 'bad';
-          else this.accuracy = 'miss';
-          console.log(`Hold too short: ${actualHoldTime.toFixed(2)}s < ${this.minHoldTime.toFixed(2)}s`);
-        }
-        
+        // 점수 계산 (끝 판정 기준)
+        this.accuracy = this.endAccuracy;
         this.calculateScore();
-        console.log(`Final accuracy: ${this.accuracy}`);
+        console.log(`End accuracy: ${this.endAccuracy}`);
+        
+        // Hold 블럭 완료 상태로 설정
+        this.isCompleted = true;
+        console.log(`Hold block completed: ${this.toString()}`);
       }
     }
   }
@@ -295,21 +303,34 @@ export default class NoteBlock {
     });
   }
 
-  // 시작과 끝 정확도를 결합하는 메서드
-  combineAccuracies(startAcc, endAcc) {
-    const accuracyRank = { 'perfect': 4, 'good': 3, 'bad': 2, 'miss': 1 };
-    const startRank = accuracyRank[startAcc] || 1;
-    const endRank = accuracyRank[endAcc] || 1;
+
+
+  // 끝 판정을 계산하는 메서드 (끝지점이 기준선에 닿을 때 호출)
+  calculateEndAccuracy(currentTime) {
+    if (this.blockType !== 'hold' || !this.expectedHitTime) return null;
     
-    // 더 나쁜 쪽을 선택 (보수적 판정)
-    const finalRank = Math.min(startRank, endRank);
+    const expectedEndTime = this.expectedHitTime + this.duration;
+    const endTimeDiff = Math.abs(currentTime - expectedEndTime);
     
-    switch (finalRank) {
-      case 4: return 'perfect';
-      case 3: return 'good';
-      case 2: return 'bad';
-      case 1: return 'miss';
-      default: return 'miss';
+    let endAccuracy;
+    if (currentTime < expectedEndTime - 0.2) {
+      // 너무 일찍 뗌
+      endAccuracy = 'miss';
+    } else if (currentTime < expectedEndTime - 0.1) {
+      // 일찍 뗌
+      endAccuracy = 'bad';
+    } else if (currentTime > expectedEndTime + 0.2) {
+      // 너무 늦게 뗌
+      endAccuracy = 'bad';
+    } else if (currentTime > expectedEndTime + 0.1) {
+      // 늦게 뗌
+      endAccuracy = 'good';
+    } else {
+      // 정확한 타이밍
+      endAccuracy = 'perfect';
     }
+    
+    this.endAccuracy = endAccuracy;
+    return endAccuracy;
   }
 } 

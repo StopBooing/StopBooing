@@ -51,7 +51,7 @@ export default function StickmanGuitar({width, height}) {
   useEffect(()=>{
     socket.off('HITfromSERVER');
     socket.on('HITfromSERVER',(data)=>{
-        console.log('HITfromSERVER',data);
+        // console.log('HITfromSERVER',data);
         if(data.type === 'drum'){
             if(data.key === 'Digit3'){
                 rightHitTrigger.fire();

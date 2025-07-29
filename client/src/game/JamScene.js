@@ -38,6 +38,14 @@ export default class JamScene extends Phaser.Scene {
     this.currentCombo = 0;
     this.totalScore = 0;
     
+    // 정확도 관련 변수들
+    this.totalHits = 0;
+    this.perfectHits = 0;
+    this.goodHits = 0;
+    this.badHits = 0;
+    this.missHits = 0;
+    this.currentAccuracy = 100; // 시작 정확도 100%
+    
     if (!window.jamSceneCountdownStarted) {
       window.jamSceneCountdownStarted = false;
     }
@@ -190,16 +198,23 @@ export default class JamScene extends Phaser.Scene {
     // 키 입력 표시 등 나머지 로직은 그대로
     this.keyPressIndicators = {};
     const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
+    
+    // 각 레인별로 원형 키 입력 표시 생성
     for (let lane = 1; lane <= 4; lane++) {
       const key = laneKeys[lane];
       const laneY = this[`lane${lane}Y`];
-      const laneHeight = laneSpacing;
-      const splashGraphics = this.add.graphics();
-      splashGraphics.setVisible(false);
+      
+             const indicatorGraphics = this.add.graphics();
+       indicatorGraphics.fillStyle(0xffffff, 0.8); // 흰색, 80% 투명도
+       indicatorGraphics.fillCircle(this.HIT_LINE_X, laneY, 25); // 기준선(HIT_LINE_X)에 원 생성
+       
+       indicatorGraphics.setVisible(false); // 초기에는 숨김
+       indicatorGraphics.setDepth(2000); // 기준선 왼쪽 블럭(1000)보다 높은 우선순위
+      
       this.keyPressIndicators[key] = {
-        graphics: splashGraphics,
+        graphics: indicatorGraphics, // 이제 Graphics 객체 자체가 원입니다.
         lane: lane,
-        isPressed: false
+        isPressed: false // 눌림 상태 추적
       };
     }
   }
@@ -359,8 +374,14 @@ export default class JamScene extends Phaser.Scene {
   setupKeyboardInput() {
     this.input.keyboard.on('keydown', (event) => {
       event.preventDefault();
-      console.log(event)
-      socket.emit('HITfromCLIENT', { note: event.code, type: this.myInstrumentName });
+
+      const code = event.code;
+      
+      // ▶ 수정: event.repeat 일 때만 바로 리턴하여 중복 키다운 이벤트 방지
+      if (event.repeat) {
+        // console.log(`Key repeat ignored: ${event.key}`); // 디버깅용
+        return; 
+      }
 
       // AudioContext 시작 (첫 번째 키 입력 시에만)
       if (!this.audioInitialized) {
@@ -368,10 +389,12 @@ export default class JamScene extends Phaser.Scene {
         this.initToneAudio();
       }
 
-      const code = event.code;
-      if (this.pressedKeys[code] || !this.activeInstrument) {
-        return;
-      }
+      // 키가 이미 눌려있지만, repeat이 아닌 경우 (예: 동시에 두 키를 눌렀을 때, 
+      // 한 키가 먼저 인식되어 pressedKeys에 등록된 후 다른 키가 인식되는 경우)
+      // 이는 정상적인 동시 입력 상황이므로, 여기서는 무시하지 않습니다.
+      // this.pressedKeys[code]를 통해 '눌려있음' 상태를 관리하되,
+      // 노트 블록 히트 로직은 이미 히트된 블록은 다시 찾지 않도록 되어있습니다.
+      // 따라서 이 부분은 제거합니다: if (this.pressedKeys[code]) return;
 
       const keyId = this.getKeyIdentifier(event);
       if (!keyId) return;
@@ -384,98 +407,82 @@ export default class JamScene extends Phaser.Scene {
       const hitNoteBlock = this.findNoteBlockToHit(keyId, now);
       
       if (hitNoteBlock) {
-        // 블럭 타입에 따른 처리
+        // ▶ 추가: 현재 눌린 키(code)에 NoteBlock 인스턴스를 저장하여,
+        //   keyup 시 해당 NoteBlock의 상태를 업데이트할 수 있도록 합니다.
+        this.pressedKeys[code] = { keyId, noteBlock: hitNoteBlock, chord: hitNoteBlock.note.split(',') };
+
         if (hitNoteBlock.blockType === 'tap') {
-          // 탭 블럭: 한 번만 누르면 됨
           const accuracy = hitNoteBlock.judgeAccuracy(now);
           hitNoteBlock.hit(now, accuracy);
-          
-          // 탭 블럭 홀드 오버 체크 시작
-          hitNoteBlock.startTapHold(now);
-          
-          // 악기 연주
-          const notes = hitNoteBlock.note.split(',');
-          this.activeInstrument.handleAttack(notes,keyId);
-          console.log("hi")
-          this.pressedKeys[code] = { keyId, chord: notes, noteBlock: hitNoteBlock };
-          
-          // 콤보 및 점수 업데이트
-          this.updateComboAndScore(accuracy);
-          
-          // 정확도를 화면에 표시
-          this.showAccuracyText(accuracy, hitNoteBlock.lane);
-          
-          console.log(`Tap Block hit: ${hitNoteBlock.toString()}, Accuracy: ${accuracy}, Score: ${hitNoteBlock.score}, Combo: ${this.currentCombo}, Total: ${this.totalScore}`);
+          this.activeInstrument.handleAttack(hitNoteBlock.note.split(','), keyId);
+          // this.pressedKeys[code]는 이미 위에서 설정됨
+          this.updateComboAndScore(hitNoteBlock.accuracy);
+          this.showAccuracyText(hitNoteBlock.accuracy, hitNoteBlock.lane);
+          console.log(`Tap Block HIT: ${hitNoteBlock.toString()}, Acc: ${hitNoteBlock.accuracy}`);
           
         } else if (hitNoteBlock.blockType === 'hold') {
-          // 홀드 블럭: 홀드 시작
           hitNoteBlock.startHold(now);
-          
-          // 악기 연주 (홀드 중에는 계속 소리 재생)
-          const notes = hitNoteBlock.note.split(',');
-          this.activeInstrument.handleAttack(notes,keyId);
-          this.pressedKeys[code] = { keyId, chord: notes, noteBlock: hitNoteBlock };
-          
-          console.log(`Hold Block started: ${hitNoteBlock.toString()}`);
+          // 시작 판정 텍스트 표시 (한 번만)
+          if (!hitNoteBlock.startAccuracyShown) {
+            this.showAccuracyText(hitNoteBlock.startAccuracy, hitNoteBlock.lane);
+            hitNoteBlock.startAccuracyShown = true;
+          }
+          this.activeInstrument.handleAttack(hitNoteBlock.note.split(','), keyId);
+          // this.pressedKeys[code]는 이미 위에서 설정됨
+          console.log(`Hold Block STARTED: ${hitNoteBlock.toString()}, Start Acc: ${hitNoteBlock.startAccuracy}`);
         }
       } else {
-        console.warn(`No NoteBlock found for key '${keyId}' at this time.`);
+        // 히트할 노트 블록이 없는 경우, 즉시 음을 재생하고 release 처리를 위한 dummy data를 pressedKeys에 저장
+        // 이는 플레이어가 박자를 틀렸지만, 그래도 소리는 나게 하고 싶을 때 유용합니다.
+        // 하지만 리듬 게임에서 '틀린 음'에 대한 시각적 피드백이나 점수 처리가 없다면 혼란을 줄 수 있습니다.
+        // 현재는 warn 메시지만 출력합니다.
+        console.warn(`No NoteBlock found for key '${keyId}' at this time. (This keyPress was not mapped to an active note block)`);
+        
+        // **옵션:** 틀린 음도 소리 나게 하고 싶을 경우 (점수/판정 없음)
+        // const dummyChord = ['C4']; // 또는 해당 keyId에 대한 기본 음정
+        // this.activeInstrument.handleAttack(dummyChord, keyId);
+        // this.pressedKeys[code] = { keyId, chord: dummyChord, noteBlock: null }; // noteBlock을 null로 표시
       }
     });
 
     this.input.keyboard.on('keyup', (event) => {
       const code = event.code;
+      const keyId = this.getKeyIdentifier(event); // keyup 이벤트에서도 keyId를 가져와야 함.
+      if (!keyId) return; // 모디파이어 키 자체는 처리 안함
 
       // 키 입력 표시 비활성화
-      const keyId = this.getKeyIdentifier(event);
-      if (keyId) {
-        this.showKeyPressIndicator(keyId, false);
-      }
+      this.showKeyPressIndicator(keyId, false);
 
-      // 키를 떼면 해당 소리를 멈춥니다.
-      const pressedData = this.pressedKeys[code];
+      const pressedData = this.pressedKeys[code]; // 이전에 눌렸던 키 데이터 가져오기
+      
+      // 키를 떼는 순서대로 로그 출력 (pressedData가 없어도)
+      console.log(`Key released: ${keyId} (Code: ${code})`);
+      
       if (pressedData && this.activeInstrument) {
         const now = Tone.now();
         
-        // 홀드 블럭인 경우 홀드 종료 처리
-        if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'hold') {
-          // 홀드 종료 전에 조기 해제 여부 확인
-          const wasReleasedEarly = pressedData.noteBlock.expectedHitTime && 
-                                  now < pressedData.noteBlock.expectedHitTime + pressedData.noteBlock.duration;
-          
-          pressedData.noteBlock.endHold(now);
-          
-          // 조기 해제 시 즉시 miss 텍스트 표시
-          if (wasReleasedEarly) {
-            this.showAccuracyText('miss', pressedData.noteBlock.lane);
-            console.log(`Hold Block released early: ${pressedData.noteBlock.toString()}, Miss displayed immediately`);
-          }
-          
-          // 홀드 완료도에 따른 점수 및 콤보 업데이트
-          this.updateComboAndScore(pressedData.noteBlock.accuracy);
-          
-          // 조기 해제가 아닌 경우에만 정확도 메시지 표시 (중복 방지)
-          if (!wasReleasedEarly) {
-            this.showAccuracyText(pressedData.noteBlock.accuracy, pressedData.noteBlock.lane);
-          }
-          
-          console.log(`Hold Block ended: ${pressedData.noteBlock.toString()}, Progress: ${Math.round(pressedData.noteBlock.holdProgress * 100)}%, Score: ${pressedData.noteBlock.score}, Too Short: ${pressedData.noteBlock.isHoldTooShort}, Released Early: ${pressedData.noteBlock.accuracy === 'miss'}`);
-        }
-        
-        // 탭 블럭인 경우 홀드 오버 체크
-        if (pressedData.noteBlock && pressedData.noteBlock.blockType === 'tap') {
-          pressedData.noteBlock.endTapHold(now);
-          
-          // 홀드 오버가 발생했다면 점수 및 콤보 재계산
-          if (pressedData.noteBlock.isTapHoldOver) {
+        if (pressedData.noteBlock) { // NoteBlock과 연결된 키업이라면
+          if (pressedData.noteBlock.blockType === 'hold') {
+            pressedData.noteBlock.endHold(now); // NoteBlock 내부에서 최종 정확도 결정
             this.updateComboAndScore(pressedData.noteBlock.accuracy);
             this.showAccuracyText(pressedData.noteBlock.accuracy, pressedData.noteBlock.lane);
-            console.log(`Tap Block hold over: ${pressedData.noteBlock.toString()}, Score: ${pressedData.noteBlock.score}`);
+            console.log(`Hold Block ENDED (on KeyUp): ${pressedData.noteBlock.toString()}, Acc: ${pressedData.noteBlock.accuracy}, Final Score: ${pressedData.noteBlock.score}`);
+
+          } else if (pressedData.noteBlock.blockType === 'tap') {
+            pressedData.noteBlock.endTapHold(now); // NoteBlock 내부에서 홀드 오버 및 정확도 결정
+            if (pressedData.noteBlock.isTapHoldOver) {
+              this.updateComboAndScore(pressedData.noteBlock.accuracy);
+              this.showAccuracyText(pressedData.noteBlock.accuracy, pressedData.noteBlock.lane);
+              console.log(`Tap Block HOLD OVER (on KeyUp): ${pressedData.noteBlock.toString()}, Acc: ${pressedData.noteBlock.accuracy}, Score: ${pressedData.noteBlock.score}`);
+            }
           }
+        } else { // NoteBlock과 연결되지 않은 (dummy) 키업이라면
+            // 옵션: dummyChord를 사용한 경우, 여기서 해당 소리 멈춤
+            // console.log(`Releasing dummy chord for key: ${pressedData.keyId}`);
         }
         
         this.activeInstrument.handleRelease(pressedData.chord);
-        delete this.pressedKeys[code];
+        delete this.pressedKeys[code]; // 눌린 키 상태 해제
       }
     });
   }
@@ -483,7 +490,16 @@ export default class JamScene extends Phaser.Scene {
   // NoteBlock에서 히트할 노트 찾기
   findNoteBlockToHit(keyId, currentTime) {
     return this.scheduledNotes.find(noteBlock => {
-      if (noteBlock.key !== keyId || noteBlock.isHit) return false;
+      if (noteBlock.key !== keyId) return false;
+      
+      // 완료된 Hold 블럭은 제외 (한 번 완료되면 다시 누를 수 없음)
+      if (noteBlock.blockType === 'hold' && noteBlock.isCompleted) return false;
+      
+      // 이미 히트한 노트는 제외 (단, 홀드 블럭은 이미 홀드 중이어도 계속 처리 가능)
+      if (noteBlock.isHit && noteBlock.blockType !== 'hold') return false;
+      
+      // 홀드 블럭이 이미 홀드 중이라면 제외 (중복 홀드 방지)
+      if (noteBlock.blockType === 'hold' && noteBlock.isHolding) return false;
       
       // 블럭 타입에 따른 히트 윈도우 설정
       let hitWindow;
@@ -502,6 +518,8 @@ export default class JamScene extends Phaser.Scene {
 
   // 정확도를 화면에 표시하는 메서드
   showAccuracyText(accuracy, lane) {
+    console.log(`showAccuracyText called: accuracy=${accuracy}, lane=${lane}`);
+    
     // 정확도별 색상 설정
     const accuracyColors = {
       'perfect': '#00ff00', // 초록색
@@ -515,6 +533,8 @@ export default class JamScene extends Phaser.Scene {
     // 레인별 Y 위치 계산
     const laneY = this.keyLanes[this.getLaneKey(lane)] || this.cameras.main.height / 2;
     
+    console.log(`showAccuracyText - HIT_LINE_X: ${this.HIT_LINE_X}, laneY: ${laneY}, color: ${color}`);
+    
     // 정확도 텍스트 생성
     const accuracyText = this.add.text(this.HIT_LINE_X + 50, laneY - 30, accuracy.toUpperCase(), {
       fontSize: '24px',
@@ -523,6 +543,8 @@ export default class JamScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 3
     }).setOrigin(0.5);
+    
+    console.log(`showAccuracyText - text created at x: ${this.HIT_LINE_X + 50}, y: ${laneY - 30}`);
     
     // 애니메이션 효과 (위로 올라가면서 페이드아웃)
     this.tweens.add({
@@ -548,9 +570,7 @@ export default class JamScene extends Phaser.Scene {
     return laneKeys[lane] || '3';
   }
 
-
-
-  // 키 입력 표시를 제어하는 메서드 (물방울 효과)
+  // 키 입력 표시를 제어하는 메서드
   showKeyPressIndicator(keyId, isPressed) {
     const indicator = this.keyPressIndicators[keyId];
     if (!indicator) return;
@@ -558,9 +578,40 @@ export default class JamScene extends Phaser.Scene {
     indicator.isPressed = isPressed;
     
     if (isPressed) {
-      // 키를 누를 때: 물방울이 터지는 효과
-      this.createSplashEffect(indicator.lane);
+      // 키를 누를 때: 원을 보이게 하고 주기적 퍼지는 효과 시작
+      indicator.graphics.setVisible(true);
+      this.startRippleEffect(keyId);
+    } else {
+      // 키를 뗄 때: 원을 숨기고 퍼지는 효과 중지
+      indicator.graphics.setVisible(false);
+      this.stopRippleEffect(keyId);
     }
+  }
+
+  // 주기적 깜빡이는 효과 시작
+  startRippleEffect(keyId) {
+    const indicator = this.keyPressIndicators[keyId];
+    if (!indicator || indicator.rippleTimer) return; // 이미 실행 중이면 무시
+
+    // 부드럽게 깜빡이는 애니메이션 시작
+    this.tweens.add({
+      targets: indicator.graphics,
+      alpha: 0.3,
+      duration: 400,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  // 주기적 깜빡이는 효과 중지
+  stopRippleEffect(keyId) {
+    const indicator = this.keyPressIndicators[keyId];
+    if (!indicator) return;
+
+    // 깜빡이는 애니메이션 중지
+    this.tweens.killTweensOf(indicator.graphics);
+    indicator.graphics.setAlpha(0.8); // 원래 투명도로 복원
   }
 
   // 물방울이 터지는 효과를 생성하는 메서드
@@ -614,8 +665,6 @@ export default class JamScene extends Phaser.Scene {
     console.log(`NoteBlock missed: ${noteBlock.toString()}, Score: ${noteBlock.score}`);
   }
 
-
-
   // 콤보 및 점수 업데이트 메서드
   updateComboAndScore(accuracy) {
     // 정확도에 따른 콤보 증가
@@ -643,6 +692,38 @@ export default class JamScene extends Phaser.Scene {
     }
     
     this.totalScore += score;
+    
+    // 정확도 업데이트
+    this.updateAccuracy(accuracy);
+  }
+
+  // 정확도 업데이트 메서드
+  updateAccuracy(accuracy) {
+    this.totalHits++;
+    
+    switch (accuracy) {
+      case 'perfect':
+        this.perfectHits++;
+        break;
+      case 'good':
+        this.goodHits++;
+        break;
+      case 'bad':
+        this.badHits++;
+        break;
+      case 'miss':
+        this.missHits++;
+        break;
+    }
+    
+    // 정확도 계산: (perfect + good) / total * 100
+    const successfulHits = this.perfectHits + this.goodHits;
+    this.currentAccuracy = this.totalHits > 0 ? (successfulHits / this.totalHits) * 100 : 100;
+    
+    // React 컴포넌트에 정확도 업데이트 이벤트 발생
+    this.game.events.emit('accuracyUpdate', this.currentAccuracy);
+    
+    console.log(`Accuracy updated: ${this.currentAccuracy.toFixed(1)}% (Perfect: ${this.perfectHits}, Good: ${this.goodHits}, Bad: ${this.badHits}, Miss: ${this.missHits}, Total: ${this.totalHits})`);
   }
 
   getKeyIdentifier(event) {
@@ -659,7 +740,7 @@ export default class JamScene extends Phaser.Scene {
     }
 
     // 일반 키는 event.key를 그대로 사용합니다.
-    return key;
+    return key.toLowerCase();
   }
   
   update(time, delta) {
@@ -668,6 +749,20 @@ export default class JamScene extends Phaser.Scene {
     const now = Tone.now(); // AudioContext 시간
     // travelTimeSeconds (previewTimeSec)는 constructor 또는 create에서 설정됨.
     // this.noteSpeed도 constructor 또는 create에서 설정됨.
+    
+    // 현재 누르고 있는 키들에 대해 노트 찾기 시도
+    Object.keys(this.pressedKeys).forEach(code => {
+      const pressedData = this.pressedKeys[code];
+      if (pressedData && !pressedData.noteBlock) {
+        // 노트가 할당되지 않은 키에 대해 노트 찾기 시도
+        const hitNoteBlock = this.findNoteBlockToHit(pressedData.keyId, now);
+        if (hitNoteBlock) {
+          // 노트를 찾았으면 할당
+          pressedData.noteBlock = hitNoteBlock;
+          console.log(`Note found for held key '${pressedData.keyId}': ${hitNoteBlock.toString()}`);
+        }
+      }
+    });
     
     this.scheduledNotes.forEach(noteBlock => {
       if (!noteBlock.visualObject || !noteBlock.visualObject.active) {
@@ -703,9 +798,9 @@ export default class JamScene extends Phaser.Scene {
             const isPastHitLine = timeToHitStart < 0; // 기준선을 지나갔는지 확인
             const isWithinHoldWindow = timeToHitStart > -noteBlock.duration; // 홀드 윈도우 내에 있는지 확인
             
-            // 색상 결정: 홀드 진행 중일 때만 주황색, 그 외에는 파란색
+            // 색상 결정: 홀드 진행 중이면서 시작이 miss가 아닐 때만 주황색, 그 외에는 파란색
             let mainColor, startColor, endColor, lineColor;
-            if (isHoldInProgress) {
+            if (isHoldInProgress && noteBlock.startAccuracy !== 'miss') {
               mainColor = 0xff8800; // 주황색 (홀드 중)
               startColor = 0xff8800;
               endColor = 0xff8800;
@@ -770,6 +865,22 @@ export default class JamScene extends Phaser.Scene {
       // 노트의 시작점이 기준선에 도달하는 시간을 기준으로 현재 진행도를 계산합니다.
       // noteBlock.expectedHitTime은 노트의 '왼쪽 끝'이 HIT_LINE_X에 닿는 시간입니다.
       const timeToHitStart = noteBlock.expectedHitTime - now; 
+      
+      // 홀드 블럭의 끝지점이 기준선에 닿을 때 끝 판정 표시
+      if (noteBlock.blockType === 'hold' && noteBlock.isHit && !noteBlock.endAccuracyShown) {
+        // 끝지점이 기준선에 도달하는 시간 계산
+        const timeToEndHit = timeToHitStart - (noteBlock.blockWidth / this.noteSpeed);
+        
+        // 디버깅: 각 홀드 블럭의 상태 확인
+        console.log(`Debug - Hold end check for lane ${noteBlock.lane}: timeToEndHit=${timeToEndHit.toFixed(2)}, endAccuracy=${noteBlock.endAccuracy}, endAccuracyShown=${noteBlock.endAccuracyShown}, key=${noteBlock.key}`);
+        
+        // 조건을 완화: 끝지점이 기준선을 지나갔거나, endAccuracy가 설정되었을 때 끝 판정 표시
+        if ((timeToEndHit < 0 || noteBlock.endAccuracy) && noteBlock.endAccuracy) {
+          this.showAccuracyText(noteBlock.endAccuracy, noteBlock.lane);
+          noteBlock.endAccuracyShown = true;
+          console.log(`Hold Block end accuracy displayed: ${noteBlock.endAccuracy} for lane ${noteBlock.lane} (${now.toFixed(2)}s)`);
+        }
+      }
       
       // 노트가 화면 전체를 이동하는 시간 (SPAWN_X에서 HIT_LINE_X까지)
       const totalTravelTime = this.previewTimeSec; 

@@ -50,10 +50,10 @@ export default function StickmanVocal({width, height}) {
   );
   useEffect(()=>{
     socket.on('HITfromSERVER',(data)=>{
-        console.log('HITfromSERVER',data);
+        // console.log('HITfromSERVER',data);
     });
     socket.on('ACCURACYfromSERVER',(data)=>{
-        console.log('ACCURACYfromSERVER',data);
+        // console.log('ACCURACYfromSERVER',data);
     });
   },[]);
 
