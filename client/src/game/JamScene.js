@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 import * as Tone from 'tone';
 import Piano from '../instruments/Piano.js';
 import ElectricGuitar from '../instruments/ElectricGuitar.js';
+import Drum from '../instruments/Drum.js';
 import NoteBlock from './NoteBlock.js';
 import SongManager from './managers/SongManager.js';
 
+import socket from '../services/socket.js';
 // SongManager 인스턴스 생성
 const songManager = new SongManager();
 
@@ -12,7 +14,7 @@ const songManager = new SongManager();
 export default class JamScene extends Phaser.Scene {
   constructor() {
     super({ key: 'JamScene' });
-    this.bpm = 84;
+    this.bpm = 100;
     this.socket = null;
     this.myInstrumentName = null; // 'keyboard', 'electric_guitar', 'bass', 'drums' 등
     this.activeInstrument = null; // 현재 활성화된 악기 컨트롤러 인스턴스
@@ -44,6 +46,12 @@ export default class JamScene extends Phaser.Scene {
     this.myInstrumentName = this.sys.game.registry.get('myInstrument');
     this.socket = this.sys.game.registry.get('socket');
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
+  }
+
+  preload() {
+    this.load.image('electric_guitar', 'assets/guitar.png');
+    this.load.image('bass', 'assets/guitar.png');
+    this.load.image('drums', 'assets/guitar.png');
   }
 
   create() {
@@ -108,14 +116,22 @@ export default class JamScene extends Phaser.Scene {
       case 'keyboard':
         this.activeInstrument = new Piano(this);
         break;
-      case 'electric_guitar':
+      case 'guitar':
         this.activeInstrument = new ElectricGuitar(this);
         break;
-      // 다른 악기들도 여기에 추가
+      case 'drum':
+        this.activeInstrument = new Drum(this);
+        break;
+      case 'vocal':
+        // 보컬 악기 생성 (임시로 Piano 사용)
+        this.activeInstrument = new Piano(this);
+        break;
       default:
-        this.add.text(400, 300, `알 수 없는 악기: ${this.myInstrumentName}`, { fontSize: '24px', color: '#ff0000' }).setOrigin(0.5);
-        return;
+        console.warn(`알 수 없는 악기: ${this.myInstrumentName}, 기본값으로 Piano 사용`);
+        this.activeInstrument = new Piano(this);
+        break;
     }
+    
     // 악기 UI 생성 및 샘플 로드를 시작합니다.
     this.activeInstrument.createUI();
   }
@@ -330,6 +346,8 @@ export default class JamScene extends Phaser.Scene {
   setupKeyboardInput() {
     this.input.keyboard.on('keydown', (event) => {
       event.preventDefault();
+      console.log(event)
+      socket.emit('HITfromCLIENT', { note: event.code, type: this.myInstrumentName });
 
       // AudioContext 시작 (첫 번째 키 입력 시에만)
       if (!this.audioInitialized) {
@@ -361,7 +379,8 @@ export default class JamScene extends Phaser.Scene {
           
           // 악기 연주
           const notes = hitNoteBlock.note.split(',');
-          this.activeInstrument.handleAttack(notes);
+          this.activeInstrument.handleAttack(notes,keyId);
+          console.log("hi")
           this.pressedKeys[code] = { keyId, chord: notes, noteBlock: hitNoteBlock };
           
           // 콤보 및 점수 업데이트
@@ -378,7 +397,7 @@ export default class JamScene extends Phaser.Scene {
           
           // 악기 연주 (홀드 중에는 계속 소리 재생)
           const notes = hitNoteBlock.note.split(',');
-          this.activeInstrument.handleAttack(notes);
+          this.activeInstrument.handleAttack(notes,keyId);
           this.pressedKeys[code] = { keyId, chord: notes, noteBlock: hitNoteBlock };
           
           console.log(`Hold Block started: ${hitNoteBlock.toString()}`);

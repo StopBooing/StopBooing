@@ -7,6 +7,7 @@ import socket from '../services/socket';
 // 편집기에서 만든 이름들
 const STATE_MACHINE = "DrumAnimation";
 const RIGHT_HIT_TRIGGER  = "rightHitTrigger";   // Trigger (play)
+const LEFT_HIT_TRIGGER  = "leftHitTrigger";   // Trigger (play)
 const HIT_TRIGGER  = "hitTrigger";   // Trigger (play)
 const ANOYING_TRIGGER  = "anoyingTrigger";   // Trigger (play)
 // ──────────────────────────────
@@ -37,25 +38,37 @@ export default function StickmanGuitar({width, height}) {
     STATE_MACHINE,
     HIT_TRIGGER
   );
+  const leftHitTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    LEFT_HIT_TRIGGER
+  );
   const anoyingTrigger = useStateMachineInput(
     rive,
     STATE_MACHINE,
     ANOYING_TRIGGER
   );
   useEffect(()=>{
+    socket.off('HITfromSERVER');
     socket.on('HITfromSERVER',(data)=>{
         console.log('HITfromSERVER',data);
-        if(data.key === 'a'){
-            rightHitTrigger.fire();
-        }
-        if(data.key === 's'){
-            hitTrigger.fire();
+        if(data.type === 'drum'){
+            if(data.key === 'Digit3'){
+                rightHitTrigger.fire();
+            }
+            else if(data.key === 'KeyE'){
+                leftHitTrigger.fire();
+            }
+            else{
+                hitTrigger.fire();
+            }
         }
     });
+    socket.off('ACCURACYfromSERVER');
     socket.on('ACCURACYfromSERVER',(data)=>{
         console.log('ACCURACYfromSERVER',data);
     });
-  },[]);
+  },[rightHitTrigger, hitTrigger, anoyingTrigger, leftHitTrigger]);
 
   return (
     <div style={{ textAlign: "center" }}>

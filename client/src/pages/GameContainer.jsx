@@ -29,7 +29,7 @@ export default function GameContainer({ nickname, song, session }) {
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
-    game.registry.set('myInstrument', 'keyboard');
+    game.registry.set('myInstrument', 'drum');
 
     const handleResize = () => {
       if (game && game.scale) {

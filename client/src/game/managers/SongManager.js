@@ -7,9 +7,9 @@ export default class SongManager {
   constructor() {
     this.instruments = {
       keyboard: Piano,
-      electric_guitar: ElectricGuitar,
-      bass: Bass,
-      drums: Drums
+      guitar: ElectricGuitar, // guitar는 ElectricGuitar 사용
+      drum: Drums, // drum은 Drums 사용
+      vocal: Piano, // vocal은 임시로 Piano 사용
     };
     
     this.availableSongs = ['song1', 'song2'];

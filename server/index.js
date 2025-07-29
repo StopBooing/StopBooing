@@ -139,7 +139,7 @@ io.on('connection', (socket) => {
 
   socket.on('HITfromCLIENT',(data)=>{
     console.log('HITfromCLIENT',data);
-    io.emit('HITfromSERVER',{...data, socketId:socket.id}); // : 누가 보냈는지를 보내야함.
+    io.emit('HITfromSERVER',{type: data.type, key: data.note}); // : 누가 보냈는지를 보내야함.
   });
 
   socket.on('ACCURACYfromCLIENT',(data)=>{
