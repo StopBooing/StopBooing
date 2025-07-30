@@ -6,6 +6,7 @@ import StickmanDrum from '../components/StickmanDrum';
 import StickmanGuitar from '../components/StickmanGuitar';
 import StickmanVocal from '../components/StickmanVocal';
 import StickmanPiano from '../components/StickmanPiano';
+import CylinderWrapper from '../components/CylinderWrapper';
 const TOTAL_TIME = 120; // 전체 시간(초)
 
 export default function GameContainer({ nickname, song, session }) {
@@ -21,8 +22,8 @@ export default function GameContainer({ nickname, song, session }) {
   useEffect(() => {
     const config = {
       type: Phaser.AUTO,
-      width: window.innerWidth * 0.4,
-      height: window.innerHeight, // 40%만 사용!
+      width: window.innerWidth * 0.4, // 40vw에 맞춤
+      height: window.innerHeight * 0.9, // 90vh에 맞춤
       parent: phaserRef.current,
       scene: [JamScene],
       physics: {
@@ -45,7 +46,7 @@ export default function GameContainer({ nickname, song, session }) {
 
     const handleResize = () => {
       if (game && game.scale) {
-        game.scale.resize(window.innerWidth, window.innerHeight * 0.4);
+        game.scale.resize(window.innerWidth * 0.4, window.innerHeight * 0.9);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -72,29 +73,29 @@ export default function GameContainer({ nickname, song, session }) {
   };
 
   // 왼쪽 커튼 스타일 동적 적용
-  const leftCurtainStyle = {
-    position: 'absolute',
-    left: 0, top: 0, height: '100%',
-    width: curtainOpen ? '100px' : '300px',
-    background: 'url(/assets/background/curtain.png) left top no-repeat',
-    backgroundSize: curtainOpen ? '200% 100%' : '300% 100%',
-    backgroundPosition: 'left top',
-    zIndex: 10,
-    pointerEvents: 'none',
-    transition: 'width 0.8s cubic-bezier(.77,0,.18,1), background-size 0.8s cubic-bezier(.77,0,.18,1)'
-  };
+  // const leftCurtainStyle = {
+  //   position: 'absolute',
+  //   left: 0, top: 0, height: '100%',
+  //   width: curtainOpen ? '100px' : '300px',
+  //   background: 'url(/assets/background/curtain.png) left top no-repeat',
+  //   backgroundSize: curtainOpen ? '200% 100%' : '300% 100%',
+  //   backgroundPosition: 'left top',
+  //   zIndex: 10,
+  //   pointerEvents: 'none',
+  //   transition: 'width 0.8s cubic-bezier(.77,0,.18,1), background-size 0.8s cubic-bezier(.77,0,.18,1)'
+  // };
   // 오른쪽 커튼 스타일 동적 적용
-  const rightCurtainStyle = {
-    position: 'absolute',
-    right: 0, top: 0, height: '100%',
-    width: curtainOpen ? '100px' : '300px',
-    background: 'url(/assets/background/curtain.png) right top no-repeat',
-    backgroundSize: curtainOpen ? '200% 100%' : '300% 100%',
-    backgroundPosition: 'right top',
-    zIndex: 10,
-    pointerEvents: 'none',
-    transition: 'width 0.8s cubic-bezier(.77,0,.18,1), background-size 0.8s cubic-bezier(.77,0,.18,1)'
-  };
+  // const rightCurtainStyle = {
+  //   position: 'absolute',
+  //   right: 0, top: 0, height: '100%',
+  //   width: curtainOpen ? '100px' : '300px',
+  //   background: 'url(/assets/background/curtain.png) right top no-repeat',
+  //   backgroundSize: curtainOpen ? '200% 100%' : '300% 100%',
+  //   backgroundPosition: 'right top',
+  //   zIndex: 10,
+  //   pointerEvents: 'none',
+  //   transition: 'width 0.8s cubic-bezier(.77,0,.18,1), background-size 0.8s cubic-bezier(.77,0,.18,1)'
+  // };
 
   return (
     <div style={{
@@ -141,15 +142,25 @@ export default function GameContainer({ nickname, song, session }) {
         </div>
       </div>
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '90vh'}}>  
-        {/* Phaser 게임 영역 */}
-        <div style={{display: 'flex', flexDirection: 'column',gap: 100, width: '20vw', height: '90vh', background: 'transparent',alignContent: 'center',justifyContent: 'center'}}>
-          <StickmanDrum width={200} height={200} />
-          <StickmanGuitar width={200} height={200} />
+        {/* 왼쪽 영역 */}
+        <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" position={{x: 0, y: 20}}>
+            <StickmanDrum width={200} height={200} />
+          </CylinderWrapper>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" position={{x: 30, y: 10}}>
+            <StickmanGuitar width={200} height={200} />
+          </CylinderWrapper>
         </div>
+        {/* 중앙 연주 영역 */}
         <div ref={phaserRef} style={{ width: '40vw', height: '90vh', overflow: 'hidden', background: 'transparent',alignContent: 'center' }} />
-        <div style={{display: 'flex', flexDirection: 'column',gap: 100, width: '20vw', height: '90vh', background: 'transparent',alignContent: 'center',justifyContent: 'center'}}>
-          <StickmanVocal width={200} height={200} />
-          <StickmanPiano width={200} height={200} />
+        {/* 오른쪽 영역 */}
+        <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal">
+            <StickmanVocal width={200} height={200} />
+          </CylinderWrapper>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" position={{x: 0, y: 30}}>
+            <StickmanPiano width={200} height={200} />
+          </CylinderWrapper>
         </div>
       </div>
     </div>
