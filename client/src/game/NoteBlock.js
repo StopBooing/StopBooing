@@ -6,6 +6,7 @@ export default class NoteBlock {
     this.key = data.key;
     this.duration = data.duration || 0;
     this.blockType = data.blockType || 'tap';
+    this.sessionType = data.sessionType || 'piano'; // 세션 타입 추가
     
     // 시각적 속성
     this.visualObject = null;
@@ -17,7 +18,7 @@ export default class NoteBlock {
     this.accuracy = null;
     this.isCompleted = false;
     
-    // 홀드 노트 전용 속성
+    // 홀드 노트 전용 속성 (제거 예정)
     this.isHolding = false;
     this.holdStartTime = null;
     this.holdEndTime = null;
@@ -27,7 +28,7 @@ export default class NoteBlock {
     this.endAccuracyShown = false;
     this.holdProgress = 0;
     
-    // 탭 홀드 오버 속성
+    // 탭 홀드 오버 속성 (제거 예정)
     this.isTapHoldOver = false;
     this.tapHoldStartTime = null;
     this.maxTapHoldTime = 0.5;

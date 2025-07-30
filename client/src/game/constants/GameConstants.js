@@ -65,7 +65,43 @@ export const JUDGMENT_COLORS = {
   MISS: '#ff0000'
 };
 
-// 노트 색상
+// 세션별 노트 색상
+export const SESSION_COLORS = {
+  piano: {
+    TAP: 0x00cc00,    // 초록색
+    HOLD: 0x0088ff,   // 파란색
+    HOLDING: 0xff8800, // 주황색
+    HIT: 0x00ff00,    // 밝은 초록색
+    HOLD_OVER: 0xff0000, // 빨간색
+    WARNING: 0xffff00  // 노란색
+  },
+  guitar: {
+    TAP: 0xff6600,    // 주황색
+    HOLD: 0xff4400,   // 진한 주황색
+    HOLDING: 0xffaa00, // 밝은 주황색
+    HIT: 0xff8800,    // 밝은 주황색
+    HOLD_OVER: 0xff0000, // 빨간색
+    WARNING: 0xffff00  // 노란색
+  },
+  drum: {
+    TAP: 0xcc00cc,    // 보라색
+    HOLD: 0x8800cc,   // 진한 보라색
+    HOLDING: 0xff00ff, // 밝은 보라색
+    HIT: 0xff66ff,    // 연한 보라색
+    HOLD_OVER: 0xff0000, // 빨간색
+    WARNING: 0xffff00  // 노란색
+  },
+  vocal: {
+    TAP: 0xff0066,    // 분홍색
+    HOLD: 0xcc0066,   // 진한 분홍색
+    HOLDING: 0xff66cc, // 연한 분홍색
+    HIT: 0xff99cc,    // 매우 연한 분홍색
+    HOLD_OVER: 0xff0000, // 빨간색
+    WARNING: 0xffff00  // 노란색
+  }
+};
+
+// 노트 색상 (하위 호환성)
 export const NOTE_COLORS = {
   TAP: {
     DEFAULT: 0x0088ff,
