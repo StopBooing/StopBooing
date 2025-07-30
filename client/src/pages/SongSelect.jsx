@@ -9,10 +9,14 @@ export default function SongSelect({ setSong }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/songs')
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const baseUrl = `${protocol}//${hostname}/backend`;
+    
+    fetch(`${baseUrl}/api/songs`)
       .then(res => res.json())
       .then(data => setSongs(data.songs || []));
-    fetch('http://localhost:3001/api/users')
+    fetch(`${baseUrl}/api/users`)
       .then(res => res.json())
       .then(data => setUsers(data.users || []));
     if (!socket) return;

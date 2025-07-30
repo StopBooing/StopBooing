@@ -9,9 +9,8 @@ import StickmanVocal from '../components/StickmanVocal';
 import StickmanPiano from '../components/StickmanPiano';
 const TOTAL_TIME = 120; // 전체 시간(초)
 
-export default function GameContainer() {
-  const params = useParams();
-  const mySession = params.session || 'keyboard'; // 기본값 설정
+export default function GameContainer({ nickname, song, session }) {
+  const mySession = session || 'keyboard'; // props에서 받거나 기본값 설정
   const phaserRef = useRef(null);
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음

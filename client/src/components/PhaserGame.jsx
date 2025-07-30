@@ -15,7 +15,15 @@ function PhaserGame({ instrument }) {
     }
 
     // 소켓 연결을 여기서 단 한 번만 생성합니다.
-    socketRef.current = io('http://localhost:3001', { autoConnect: false });
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const serverUrl = `${protocol}//${hostname}`;
+    
+    socketRef.current = io(serverUrl, { 
+      autoConnect: false,
+      path: '/backend/socket.io',
+      transports: ['polling', 'websocket']
+    });
     if(socketRef.current) socketRef.current.connect();
 
     socketRef.current.on('connect', () => {

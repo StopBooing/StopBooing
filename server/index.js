@@ -10,7 +10,8 @@ const app = express();
 // CORS 설정 - 프로덕션과 개발 환경 모두 지원
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://your-kcloud-domain.com', // kcloud 도메인으로 변경 필요
+  'http://172.20.12.65',
+  'https://172.20.12.65',
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -57,6 +58,7 @@ io.on('connection', (socket) => {
   console.log('클라이언트 접속:', socket.id);
 
   socket.on('check_nickname', (nickname) => {
+    console.log('check_nickname', nickname);
     if(users.length >= 5) {
       socket.emit('room_already_full');
       console.log('방이 꽉 찼습니다 IN SERVER.');
@@ -156,9 +158,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('HITfromCLIENT',(data)=>{
-    console.log('HITfromCLIENT',data);
-    io.emit('HITfromSERVER',{type: data.type, key: data.note}); // : 누가 보냈는지를 보내야함.
+  socket.on('HITfromCLIENT',(type)=>{
+    console.log('HITfromCLIENT',type);
+    io.emit('HITfromSERVER',type); // : 누가 보냈는지를 보내야함.
   });
 
   socket.on('ACCURACYfromCLIENT',(data)=>{

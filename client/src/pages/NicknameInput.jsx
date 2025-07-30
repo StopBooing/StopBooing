@@ -28,6 +28,8 @@ export default function NicknameInput({ setNickname }) {
 
   const handleNext = async () => {
     if (!nickname) return;
+    console.log(nickname);
+    console.log(socket, 'socket in client');
     socket.emit('check_nickname', nickname);
   };
 

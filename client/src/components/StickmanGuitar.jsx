@@ -1,7 +1,7 @@
 // src/components/StickmanGuitar.jsx
 import React, { useEffect } from "react";
 import { useRive, useStateMachineInput } from "@rive-app/react-canvas";
-
+import socket from '../services/socket';
 // ──────────────────────────────
 // 편집기에서 만든 이름들
 const STATE_MACHINE = "State Machine 1";
@@ -28,6 +28,14 @@ export default function StickmanGuitar({width, height}) {
     STATE_MACHINE,
     TRIGGER_NAME
   );
+  useEffect(()=>{
+    socket.off('HITfromSERVER');
+    socket.on('HITfromSERVER',(type)=>{
+        if(type === 'guitar'){
+          playTrigger.fire();
+        }
+    });
+  },[playTrigger]); 
 
 //   // 디버깅용 로그
 //   console.log("Rive instance:", rive);

@@ -408,6 +408,7 @@ export default class JamScene extends Phaser.Scene {
 
       // 키 입력 표시 활성화
       this.showKeyPressIndicator(keyId, true);
+      socket.emit("HITfromCLIENT", this.myInstrumentName);
 
       // NoteBlock에서 해당 키와 타이밍에 맞는 노트 찾기
       const now = this.getCurrentTime();

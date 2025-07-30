@@ -49,18 +49,16 @@ export default function StickmanVocal({width, height}) {
     ANNOYING_TRIGGER
   );
   useEffect(()=>{
-    socket.on('HITfromSERVER',(data)=>{
-        if(data.type === 'vocal'){
-            if(data.key === 'Digit1'){
-                legMoveTrigger.fire();
-            }
+    socket.off('HITfromSERVER');
+    socket.on('HITfromSERVER',(type)=>{
+        if(type === 'vocal'){
+            singTrigger.fire();
         }
-        // console.log('HITfromSERVER',data);
     });
     socket.on('ACCURACYfromSERVER',(data)=>{
         // console.log('ACCURACYfromSERVER',data);
     });
-  },[]);
+  },[legMoveTrigger, makeHandlingTrigger, singTrigger, annoyingTrigger]);
 
   return (
     <div style={{ textAlign: "center" }}>

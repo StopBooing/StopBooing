@@ -120,7 +120,7 @@ export default function SessionSelect({ setSession }) {
   const handleNext = useCallback(() => {
     if (!selectedSession) return;
     setSession(selectedSession);
-    navigate(`/game/${selectedSession}`);
+    navigate(`/game`);
   }, [selectedSession, setSession, navigate]);
 
   // 악기 상태 계산을 useMemo로 메모이제이션
