@@ -16,10 +16,24 @@ export default function App() {
   const [song, setSong] = useState('');
   const [session, setSession] = useState('');
   const [selectedInstrument, setSelectedInstrument] = useState("keyboard");
+  
   const handleInstrumentSelect = async (instrumentId) => {
     console.log(`App: ${instrumentId}가 선택되었습니다. 게임을 시작합니다.`);
     setSelectedInstrument(instrumentId);
     console.log(selectedInstrument);
+  };
+
+  // 테스트용 결과 데이터
+  const testResultData = {
+    songTitle: "Don't look back in anger",
+    totalGrade: "S",
+    sessionResults: {
+      drum: { accuracy: "95%", perfect: 150 },
+      guitar: { accuracy: "92%", perfect: 120 },
+      vocal: { accuracy: "88%", perfect: 95 },
+      piano: { accuracy: "96%", perfect: 180 }
+    },
+    onHomeClick: () => window.location.href = '/'
   };
 
   return (
@@ -30,7 +44,7 @@ export default function App() {
         <Route path="/song" element={<SongSelect setSong={setSong} />} />
         <Route path="/session" element={<SessionSelect setSession={setSession} />} />
         <Route path="/game" element={<GameContainer nickname={nickname} song={song} session={session} />} />
-        <Route path="/result" element={<Result />} />
+        <Route path="/result" element={<Result {...testResultData} />} />
         <Route path="/stickman" element={<Stickman />} />
         <Route path="/instrument" element={<InstrumentSelectionComponent onInstrumentSelect={handleInstrumentSelect} />} />
       </Routes>

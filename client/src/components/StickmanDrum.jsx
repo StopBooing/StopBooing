@@ -84,7 +84,7 @@ export default function StickmanGuitar({width, height}) {
           style={{ 
             width: width, 
             height: height,
-            transform: 'scale(1.2)',
+            transform: 'scale(1.9)',
             transformOrigin: 'center center'
           }} 
         />
