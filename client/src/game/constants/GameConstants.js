@@ -67,7 +67,7 @@ export const JUDGMENT_COLORS = {
 
 // 세션별 노트 색상
 export const SESSION_COLORS = {
-  piano: {
+  keyboard: {
     TAP: 0x00cc00,    // 초록색
     HOLD: 0x0088ff,   // 파란색
     HOLDING: 0xff8800, // 주황색

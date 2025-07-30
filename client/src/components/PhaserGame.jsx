@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { io } from 'socket.io-client';
 
-import JamScene from '../game/JamScene';
+import JamScene from '../game/scenes/JamScene';
 
 // App 컴포넌트로부터 instrument prop을 받습니다.
 function PhaserGame({ instrument }) {

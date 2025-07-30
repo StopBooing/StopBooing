@@ -16,7 +16,7 @@ export default function StickmanVocal({width, height}) {
     
   /* ① Rive 인스턴스 + Canvas ref */
   const { rive, canvasRef, RiveComponent } = useRive({
-    src: "/animations/stickman_vocal.riv",
+    src: "/assets/animations/stickman_vocal.riv",
     stateMachines: STATE_MACHINE, // 임시로 주석처리
     autoplay: true,
     onStateChange: (event) => {
@@ -50,6 +50,11 @@ export default function StickmanVocal({width, height}) {
   );
   useEffect(()=>{
     socket.on('HITfromSERVER',(data)=>{
+        if(data.type === 'vocal'){
+            if(data.key === 'Digit1'){
+                legMoveTrigger.fire();
+            }
+        }
         // console.log('HITfromSERVER',data);
     });
     socket.on('ACCURACYfromSERVER',(data)=>{

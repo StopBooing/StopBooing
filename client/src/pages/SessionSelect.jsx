@@ -102,12 +102,7 @@ export default function SessionSelect({ setSession }) {
 
   // 악기 선택/해제 핸들러를 useCallback으로 메모이제이션
   const handleSessionSelect = useCallback((session) => {
-    console.log('handleSessionSelect 호출:', session);
-    console.log('현재 selectedInstruments:', selectedInstruments);
-    console.log('현재 myPlayerId:', myPlayerId);
-    
     if (selectedInstruments[session]) {
-      console.log(`악기 ${session}는 이미 선택되었습니다.`);
       return;
     }
     socket.emit('select_instrument', session);
@@ -125,7 +120,7 @@ export default function SessionSelect({ setSession }) {
   const handleNext = useCallback(() => {
     if (!selectedSession) return;
     setSession(selectedSession);
-    navigate('/game');
+    navigate(`/game/${selectedSession}`);
   }, [selectedSession, setSession, navigate]);
 
   // 악기 상태 계산을 useMemo로 메모이제이션

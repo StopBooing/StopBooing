@@ -11,7 +11,7 @@ const TRIGGER_NAME  = "playTrigger";   // Trigger (play)
 export default function StickmanGuitar({width, height}) {
   /* ① Rive 인스턴스 + Canvas ref */
   const { rive, canvasRef, RiveComponent } = useRive({
-    src: "/animations/stickman_guitar.riv",
+    src: "/assets/animations/stickman_guitar.riv",
     stateMachines: STATE_MACHINE, // 임시로 주석처리
     autoplay: true,
     onStateChange: (event) => {

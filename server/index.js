@@ -7,7 +7,26 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+// CORS 설정 - 프로덕션과 개발 환경 모두 지원
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://your-kcloud-domain.com', // kcloud 도메인으로 변경 필요
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+app.use(cors({ 
+  origin: function (origin, callback) {
+    // origin이 없는 경우 (모바일 앱, Postman 등) 허용
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS 정책에 의해 차단됨'));
+    }
+  },
+  credentials: true 
+}));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -16,7 +35,7 @@ const io = new Server(server, {
   }
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 let users = []; // { id: socket.id, nickname: '닉네임', instrument: '악기명' }
 let selectedInstruments = {}; // { instrument: socket.id } - 어떤 악기가 누구에게 선택되었는지

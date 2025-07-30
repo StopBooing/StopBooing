@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import Phaser from 'phaser';
-import JamScene from '../game/JamScene';
+import JamScene from '../game/scenes/JamScene';
 import socket from '../services/socket';
 import StickmanDrum from '../components/StickmanDrum';
 import StickmanGuitar from '../components/StickmanGuitar';
@@ -8,7 +9,9 @@ import StickmanVocal from '../components/StickmanVocal';
 import StickmanPiano from '../components/StickmanPiano';
 const TOTAL_TIME = 120; // 전체 시간(초)
 
-export default function GameContainer({ nickname, song, session }) {
+export default function GameContainer() {
+  const params = useParams();
+  const mySession = params.session || 'keyboard'; // 기본값 설정
   const phaserRef = useRef(null);
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
@@ -33,7 +36,7 @@ export default function GameContainer({ nickname, song, session }) {
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
-    game.registry.set('myInstrument', 'drum');
+    game.registry.set('myInstrument', mySession);
     
     // 정확도 업데이트를 위한 이벤트 리스너 추가
     const handleAccuracyUpdate = (newAccuracy) => {

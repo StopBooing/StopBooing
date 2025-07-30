@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import SongManager from './managers/SongManager.js';
-import JudgmentManager from './managers/JudgmentManager.js';
+import SongManager from '../managers/SongManager.js';
+import JudgmentManager from '../managers/JudgmentManager.js';
 import { 
   GAME_CONFIG, 
   JUDGMENT_COLORS, 
@@ -8,12 +8,12 @@ import {
   SESSION_COLORS,
   LANE_KEYS, 
   ANIMATION_CONFIG 
-} from './constants/GameConstants.js';
-import { ErrorHandler } from '../utils/ErrorHandler.js';
-import { PerformanceMonitor } from '../utils/PerformanceMonitor.js';
-import NoteBlock from './NoteBlock.js';
+} from '../constants/GameConstants.js';
+import { ErrorHandler } from '../../utils/ErrorHandler.js';
+import { PerformanceMonitor } from '../../utils/PerformanceMonitor.js';
+import NoteBlock from '../NoteBlock.js';
 
-import socket from '../services/socket.js';
+import socket from '../../services/socket.js';
 // SongManager 인스턴스 생성
 const songManager = new SongManager();
 
@@ -116,19 +116,12 @@ export default class JamScene extends Phaser.Scene {
   }
 
   createSessionUI() {
-    // 세션 이름 매핑
-    const sessionMapping = {
-      'keyboard': 'piano',
-      'guitar': 'guitar', 
-      'drum': 'drum',
-      'vocal': 'vocal'
-    };
-
-    this.sessionType = sessionMapping[this.myInstrumentName] || 'piano';
+    // 세션 타입 직접 사용 (매핑 제거)
+    this.sessionType = this.myInstrumentName || 'keyboard';
     
     // 세션별 UI 표시
     const sessionNames = {
-      'piano': '피아노',
+      'keyboard': '키보드',
       'drum': '드럼', 
       'guitar': '일렉기타',
       'vocal': '보컬'
@@ -140,7 +133,7 @@ export default class JamScene extends Phaser.Scene {
     this.add.text(400, 50, `${displayName} 세션`, { fontSize: '32px' }).setOrigin(0.5);
     
     // 세션별 색상 안내
-    const sessionColors = SESSION_COLORS[this.sessionType] || SESSION_COLORS.piano;
+    const sessionColors = SESSION_COLORS[this.sessionType] || SESSION_COLORS.keyboard;
     const sessionColorHex = '#' + sessionColors.TAP.toString(16).padStart(6, '0');
     
     this.sessionColorText = this.add.text(400, 90, `Your Color: ${sessionColorHex}`, {
@@ -657,6 +650,10 @@ export default class JamScene extends Phaser.Scene {
   updateAccuracy(accuracy) {
     // 이 메서드는 하위 호환성을 위해 유지하지만 실제로는 JudgmentManager를 사용
     console.warn('updateAccuracy is deprecated. Use judgmentManager.updateScoreAndCombo instead.');
+    
+    // 정확도 업데이트 이벤트 발생
+    const currentAccuracy = this.judgmentManager.getCurrentAccuracy();
+    this.game.events.emit('accuracyUpdate', currentAccuracy);
   }
 
   getKeyIdentifier(event) {
