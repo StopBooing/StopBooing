@@ -63,7 +63,7 @@ export class PerformanceMonitor {
       console.warn(`Slow update detected: ${this.metrics.updateTime.toFixed(2)}ms`);
     }
     
-    console.log(`Performance: ${this.metrics.fps} FPS, ${this.metrics.updateTime.toFixed(2)}ms update, ${this.metrics.noteCount} notes, ${this.metrics.memoryUsage}MB memory`);
+    // console.log(`Performance: ${this.metrics.fps} FPS, ${this.metrics.updateTime.toFixed(2)}ms update, ${this.metrics.noteCount} notes, ${this.metrics.memoryUsage}MB memory`);
   }
   
   getMetrics() {

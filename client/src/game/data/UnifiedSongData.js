@@ -76,8 +76,6 @@ export default class UnifiedSongData {
         timing: p.time,
         lane: p.lane,
         key: laneKeys[p.lane],
-        duration: 0,
-        blockType: 'tap',
         sessionType: p.sessionType
       });
     });
@@ -138,8 +136,6 @@ export default class UnifiedSongData {
         timing: p.time,
         lane: p.lane,
         key: laneKeys[p.lane],
-        duration: 0,
-        blockType: 'tap',
         sessionType: p.sessionType
       });
     });

@@ -7,6 +7,8 @@ import StickmanDrum from '../components/StickmanDrum';
 import StickmanGuitar from '../components/StickmanGuitar';
 import StickmanVocal from '../components/StickmanVocal';
 import StickmanPiano from '../components/StickmanPiano';
+import ComboDisplay from '../components/ComboDisplay';
+import ComboBreakAlert from '../components/ComboBreakAlert';
 const TOTAL_TIME = 120; // 전체 시간(초)
 
 export default function GameContainer({ nickname, song, session }) {
@@ -15,12 +17,21 @@ export default function GameContainer({ nickname, song, session }) {
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
   const [accuracy, setAccuracy] = useState(100); // 정확도 (100%로 시작)
+  const [gameStats, setGameStats] = useState({
+    combo: 0,
+    accuracy: 100,
+    score: 0
+  });
+  const [comboBreak, setComboBreak] = useState(0);
 
   // 커튼 애니메이션 상태
   const [curtainOpen, setCurtainOpen] = useState(false);
   const handleCurtainAnimate = () => setCurtainOpen(true);
 
   useEffect(() => {
+    console.log('GameContainer: 받은 session prop:', session);
+    console.log('GameContainer: 사용할 mySession:', mySession);
+    
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth * 0.4,
@@ -37,13 +48,30 @@ export default function GameContainer({ nickname, song, session }) {
     gameRef.current = game;
     game.registry.set('myInstrument', mySession);
     
-    // 정확도 업데이트를 위한 이벤트 리스너 추가
+    // 게임 통계 업데이트를 위한 이벤트 리스너들
+    const handleGameStatsUpdate = (stats) => {
+      setGameStats(stats);
+      setAccuracy(stats.accuracy);
+    };
+
+    const handleComboUpdate = (combo) => {
+      setGameStats(prev => ({ ...prev, combo }));
+    };
+
     const handleAccuracyUpdate = (newAccuracy) => {
       setAccuracy(newAccuracy);
+      setGameStats(prev => ({ ...prev, accuracy: newAccuracy }));
+    };
+
+    const handleComboBreak = (brokenCombo) => {
+      setComboBreak(brokenCombo);
     };
     
-    // 게임에서 정확도 업데이트 이벤트를 받을 수 있도록 설정
+    // 게임에서 이벤트를 받을 수 있도록 설정
+    game.events.on('gameStatsUpdate', handleGameStatsUpdate);
+    game.events.on('comboUpdate', handleComboUpdate);
     game.events.on('accuracyUpdate', handleAccuracyUpdate);
+    game.events.on('comboBreak', handleComboBreak);
 
     const handleResize = () => {
       if (game && game.scale) {
@@ -60,7 +88,10 @@ export default function GameContainer({ nickname, song, session }) {
     return () => {
       window.removeEventListener('resize', handleResize);
       clearInterval(timer);
+      game.events.off('gameStatsUpdate', handleGameStatsUpdate);
+      game.events.off('comboUpdate', handleComboUpdate);
       game.events.off('accuracyUpdate', handleAccuracyUpdate);
+      game.events.off('comboBreak', handleComboBreak);
       game.destroy(true);
     };
   }, []);
@@ -100,6 +131,7 @@ export default function GameContainer({ nickname, song, session }) {
 
   return (
     <div style={{
+      position: 'relative',
       display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh',
       background: 'linear-gradient(180deg, #18171c 0%, #23222a 100%)', // 어두운 Deemo 스타일
       overflow: 'hidden',
@@ -122,10 +154,23 @@ export default function GameContainer({ nickname, song, session }) {
           </div>
 
         </div>  
-        {/* 가운데: 정확도 표시 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* 가운데: 정확도 및 콤보 표시 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
           <span style={{ fontSize: 40, fontWeight: 'bold', color: '#2196f3' }}>
             {accuracy.toFixed(1)}%
+          </span>
+          {gameStats.combo > 0 && (
+            <span style={{ 
+              fontSize: 20, 
+              fontWeight: 'bold', 
+              color: gameStats.combo >= 30 ? '#ff6600' : gameStats.combo >= 20 ? '#ffff00' : '#00ff00',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+            }}>
+              {gameStats.combo} COMBO
+            </span>
+          )}
+          <span style={{ fontSize: 16, color: '#ffff00', fontWeight: 'bold' }}>
+            Score: {gameStats.score.toLocaleString()}
           </span>
         </div>
         {/* 오른쪽: 홈/설정 */}
@@ -154,6 +199,16 @@ export default function GameContainer({ nickname, song, session }) {
           <StickmanPiano width={200} height={200} />
         </div>
       </div>
+      
+      {/* 콤보 표시 UI */}
+      <ComboDisplay 
+        combo={gameStats.combo}
+        accuracy={gameStats.accuracy}
+        score={gameStats.score}
+      />
+      
+      {/* 콤보 브레이크 알림 */}
+      <ComboBreakAlert comboBreak={comboBreak} />
     </div>
   );
 } 

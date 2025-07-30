@@ -49,18 +49,32 @@ export default function StickmanVocal({width, height}) {
     ANNOYING_TRIGGER
   );
   useEffect(()=>{
-    socket.off('HITfromSERVER');
-    socket.on('HITfromSERVER',(type)=>{
-      console.log('HITfromSERVER',type);
+    console.log('PIANO: useEffect 실행됨');
+    
+    const handleHitFromServer = (type) => {
+      console.log('HITfromSERVER_PIANO IN PIANO',type);
+      console.log('PIANO: type === keyboard?', type === 'keyboard');
       if(type === 'keyboard'){
-        rightHitTrigger.fire();
+        console.log('PIANO: 애니메이션 실행!');
+        if(rightHitTrigger) {
+          rightHitTrigger.fire();
+        }
       }
-    });
+    };
+    
+    socket.off('HITfromSERVER_PIANO');
+    socket.on('HITfromSERVER_PIANO', handleHitFromServer);
+    
     socket.off('ACCURACYfromSERVER');
     socket.on('ACCURACYfromSERVER',(data)=>{
         console.log('ACCURACYfromSERVER',data);
     });
-  },[rightHitTrigger, leftHitTrigger, doubleHitTrigger, annoyingTrigger]);
+    
+    return () => {
+      socket.off('HITfromSERVER_PIANO', handleHitFromServer);
+      socket.off('ACCURACYfromSERVER');
+    };
+  },[leftHitTrigger,rightHitTrigger,doubleHitTrigger,annoyingTrigger]);
 
   return (
     <div style={{ textAlign: "center" }}>

@@ -49,16 +49,31 @@ export default function StickmanVocal({width, height}) {
     ANNOYING_TRIGGER
   );
   useEffect(()=>{
-    socket.off('HITfromSERVER');
-    socket.on('HITfromSERVER',(type)=>{
+    console.log('VOCAL: useEffect 실행됨');
+    
+    const handleHitFromServer = (type) => {
+        console.log('HITfromSERVER_VOCAL IN VOCAL',type);
+        console.log('VOCAL: type === vocal?', type === 'vocal');
         if(type === 'vocal'){
-            singTrigger.fire();
+            console.log('VOCAL: 애니메이션 실행!');
+            if(singTrigger) {
+              singTrigger.fire();
+            }
         }
-    });
+    };
+    
+    socket.off('HITfromSERVER_VOCAL');
+    socket.on('HITfromSERVER_VOCAL', handleHitFromServer);
+    
     socket.on('ACCURACYfromSERVER',(data)=>{
         // console.log('ACCURACYfromSERVER',data);
     });
-  },[legMoveTrigger, makeHandlingTrigger, singTrigger, annoyingTrigger]);
+    
+    return () => {
+      socket.off('HITfromSERVER_VOCAL', handleHitFromServer);
+      socket.off('ACCURACYfromSERVER');
+    };
+  },[singTrigger,annoyingTrigger,legMoveTrigger,makeHandlingTrigger]);
 
   return (
     <div style={{ textAlign: "center" }}>

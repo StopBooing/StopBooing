@@ -49,18 +49,32 @@ export default function StickmanGuitar({width, height}) {
     ANOYING_TRIGGER
   );
   useEffect(()=>{
-    socket.off('HITfromSERVER');
-    socket.on('HITfromSERVER',(type)=>{
-      console.log('HITfromSERVER IN DRUM',type);
+    console.log('DRUM: useEffect 실행됨');
+    
+        const handleHitFromServer = (type) => {
+      console.log('HITfromSERVER_DRUM IN DRUM',type);
+      console.log('DRUM: type === drum?', type === 'drum');
         if(type === 'drum'){
-          rightHitTrigger.fire();
+          console.log('DRUM: 애니메이션 실행!');
+          if(rightHitTrigger) {
+            rightHitTrigger.fire();
+          }
         }
-    });
+    };
+    
+    socket.off('HITfromSERVER_DRUM');
+    socket.on('HITfromSERVER_DRUM', handleHitFromServer);
+    
     socket.off('ACCURACYfromSERVER');
     socket.on('ACCURACYfromSERVER',(data)=>{
         console.log('ACCURACYfromSERVER',data);
     });
-  },[rightHitTrigger, hitTrigger, anoyingTrigger, leftHitTrigger]);
+    
+    return () => {
+      socket.off('HITfromSERVER_DRUM', handleHitFromServer);
+      socket.off('ACCURACYfromSERVER');
+    };
+  },[rightHitTrigger,hitTrigger,leftHitTrigger,anoyingTrigger]);
 
   return (
     <div style={{ textAlign: "center" }}>

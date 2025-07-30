@@ -8,7 +8,6 @@ import SessionSelect from './pages/SessionSelect';
 import GameContainer from './pages/GameContainer';
 import Result from './pages/Result';
 import Stickman from './pages/Stickman';
-import PhaserGame from './components/PhaserGame.jsx';
 
 import InstrumentSelectionComponent from './components/InstrumentSelectionComponent.jsx';
 
@@ -34,7 +33,6 @@ export default function App() {
         <Route path="/result" element={<Result />} />
         <Route path="/stickman" element={<Stickman />} />
         <Route path="/instrument" element={<InstrumentSelectionComponent onInstrumentSelect={handleInstrumentSelect} />} />
-        <Route path="/cgame" element={<PhaserGame instrument={selectedInstrument} />} />
       </Routes>
     </Router>
   );

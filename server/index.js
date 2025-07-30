@@ -160,7 +160,13 @@ io.on('connection', (socket) => {
 
   socket.on('HITfromCLIENT',(type)=>{
     console.log('HITfromCLIENT',type);
-    io.emit('HITfromSERVER',type); // : 누가 보냈는지를 보내야함.
+    console.log('서버: 각 컴포넌트별 이벤트 브로드캐스트 전송 - type:', type);
+    
+    // 각 컴포넌트별로 다른 이벤트 이름으로 브로드캐스트
+    io.emit('HITfromSERVER_DRUM', type);
+    io.emit('HITfromSERVER_GUITAR', type);
+    io.emit('HITfromSERVER_VOCAL', type);
+    io.emit('HITfromSERVER_PIANO', type);
   });
 
   socket.on('ACCURACYfromCLIENT',(data)=>{

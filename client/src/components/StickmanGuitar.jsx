@@ -29,12 +29,25 @@ export default function StickmanGuitar({width, height}) {
     TRIGGER_NAME
   );
   useEffect(()=>{
-    socket.off('HITfromSERVER');
-    socket.on('HITfromSERVER',(type)=>{
+    console.log('GUITAR: useEffect 실행됨');
+    
+    const handleHitFromServer = (type) => {
+        console.log('HITfromSERVER_GUITAR IN GUITAR',type);
+        console.log('GUITAR: type === guitar?', type === 'guitar');
         if(type === 'guitar'){
-          playTrigger.fire();
+          console.log('GUITAR: 애니메이션 실행!');
+          if(playTrigger) {
+            playTrigger.fire();
+          }
         }
-    });
+    };
+    
+    socket.off('HITfromSERVER_GUITAR');
+    socket.on('HITfromSERVER_GUITAR', handleHitFromServer);
+    
+    return () => {
+      socket.off('HITfromSERVER_GUITAR', handleHitFromServer);
+    };
   },[playTrigger]); 
 
 //   // 디버깅용 로그
