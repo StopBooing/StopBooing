@@ -4,9 +4,26 @@ export const GAME_CONFIG = {
   CANVAS_WIDTH: 800,
   CANVAS_HEIGHT: 600,
   
+  // 키 설정
+  KEY_COUNT: 8, // 8키 모드
+  LANE_COUNT: 8, // 8레인
+  
   // 노트 관련 설정
   PREVIEW_TIME_SEC: 2, // 노트가 화면을 이동하는 시간
   HIT_LINE_OFFSET: 150, // 기준선이 화면 아래에서 떨어진 거리
+  
+  // 노트 크기 설정
+  NOTE: {
+    WIDTH_RATIO: 0.8, // 레인 간격 대비 노트 너비 비율
+    TAP_HEIGHT: 25, // 탭 노트 높이
+    HOLD_MIN_HEIGHT: 25, // 홀드 노트 최소 높이
+    HOLD_END_HEIGHT: 8, // 홀드 노트 끝 부분 높이
+    HOLD_START_HEIGHT: 8, // 홀드 노트 시작 부분 높이
+    SPACING_MARGIN: 5, // 노트 간격 여백
+    DOT_INTERVAL: 15, // 홀드 노트 점 간격
+    DOT_SIZE: 1.5, // 홀드 노트 점 크기
+    LINE_WIDTH: 1.5 // 홀드 노트 연결선 두께
+  },
   
   // 판정 윈도우 (초 단위)
   JUDGMENT_WINDOWS: {
@@ -64,12 +81,16 @@ export const NOTE_COLORS = {
   }
 };
 
-// 레인 키 매핑
+// 레인 키 매핑 (8키)
 export const LANE_KEYS = {
-  1: '3',
-  2: 'e',
-  3: 'k', 
-  4: 'm'
+  1: 'a',
+  2: 's',
+  3: 'd',
+  4: 'f',
+  5: 'j',
+  6: 'k',
+  7: 'l',
+  8: ';'
 };
 
 // 애니메이션 설정

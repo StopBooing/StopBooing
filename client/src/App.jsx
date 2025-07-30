@@ -1,7 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
-import * as Tone from 'tone';
 import StartPage from './pages/StartPage';
 import NicknameInput from './pages/NicknameInput';
 import SongSelect from './pages/SongSelect';
@@ -19,10 +18,6 @@ export default function App() {
   const [session, setSession] = useState('');
   const [selectedInstrument, setSelectedInstrument] = useState("keyboard");
   const handleInstrumentSelect = async (instrumentId) => {
-    if (Tone.context.state !== 'running') {
-      await Tone.start();
-      console.log('AudioContext가 성공적으로 시작되었습니다.');
-    }
     console.log(`App: ${instrumentId}가 선택되었습니다. 게임을 시작합니다.`);
     setSelectedInstrument(instrumentId);
     console.log(selectedInstrument);

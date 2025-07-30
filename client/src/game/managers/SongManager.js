@@ -1,44 +1,30 @@
-import Piano from '../data/instruments/Piano.js';
-import ElectricGuitar from '../data/instruments/ElectricGuitar.js';
-import Bass from '../data/instruments/Bass.js';
-import Drums from '../data/instruments/Drums.js';
+import UnifiedSongData from '../data/UnifiedSongData.js';
 
 export default class SongManager {
   constructor() {
-    this.instruments = {
-      keyboard: Piano,
-      guitar: ElectricGuitar, // guitar는 ElectricGuitar 사용
-      drum: Drums, // drum은 Drums 사용
-      vocal: Piano, // vocal은 임시로 Piano 사용
+    // 악기 이름 매핑
+    this.instrumentMapping = {
+      keyboard: 'piano',
+      guitar: 'guitar',
+      drum: 'drum',
+      vocal: 'vocal'
     };
     
     this.availableSongs = ['song1', 'song2'];
     this.currentSong = 'song1';
   }
 
-  // 악기별 곡 데이터 가져오기
+  // 세션별 곡 데이터 가져오기
   getSongData(instrumentName, songId = null) {
     const song = songId || this.currentSong;
-    const instrument = this.instruments[instrumentName];
+    const sessionType = this.instrumentMapping[instrumentName] || 'piano';
     
-    if (!instrument) {
-      console.error(`알 수 없는 악기: ${instrumentName}`);
-      return [];
-    }
-    
-    return instrument.createSongData(song);
+    return UnifiedSongData.createSongData(sessionType, song);
   }
 
-  // 악기별 레인 키 매핑 가져오기
+  // 고정 레인 키 매핑 가져오기
   getLaneKeys(instrumentName) {
-    const instrument = this.instruments[instrumentName];
-    
-    if (!instrument) {
-      console.error(`알 수 없는 악기: ${instrumentName}`);
-      return {};
-    }
-    
-    return instrument.getLaneKeys();
+    return UnifiedSongData.getLaneKeys();
   }
 
   // 사용 가능한 곡 목록 가져오기
@@ -63,7 +49,7 @@ export default class SongManager {
 
   // 사용 가능한 악기 목록 가져오기
   getAvailableInstruments() {
-    return Object.keys(this.instruments);
+    return Object.keys(this.instrumentMapping);
   }
 
   // 곡 정보 가져오기 (곡 이름, 길이 등)

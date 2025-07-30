@@ -21,7 +21,7 @@ export default function GameContainer({ nickname, song, session }) {
   useEffect(() => {
     const config = {
       type: Phaser.AUTO,
-      width: window.innerWidth * 0.6,
+      width: window.innerWidth * 0.4,
       height: window.innerHeight, // 40%만 사용!
       parent: phaserRef.current,
       scene: [JamScene],
@@ -33,7 +33,7 @@ export default function GameContainer({ nickname, song, session }) {
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
-    game.registry.set('myInstrument', 'keyboard');
+    game.registry.set('myInstrument', 'drum');
     
     // 정확도 업데이트를 위한 이벤트 리스너 추가
     const handleAccuracyUpdate = (newAccuracy) => {
@@ -142,63 +142,14 @@ export default function GameContainer({ nickname, song, session }) {
       </div>
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '90vh'}}>  
         {/* Phaser 게임 영역 */}
-        <div ref={phaserRef} style={{ width: '60vw', height: '90vh', overflow: 'hidden', background: 'transparent',alignContent: 'center' }} />
-        {/* Stickman 영역 (무대 + 커튼 PNG 양쪽 배치) */}
-        <div style={{
-          position: 'relative',
-          width: '40vw', height: '90vh',
-          background: 'linear-gradient(180deg, #23222a 0%, #18171c 100%)',
-        }}>
-          {/* 커튼 애니메이션 버튼 */}
-          <button onClick={handleCurtainAnimate} style={{
-            position: 'absolute', top: 24, left: 24, zIndex: 1000,
-            background: '#b22222', color: '#fff', border: 'none', borderRadius: 16, fontSize: 18, fontWeight: 700,
-            padding: '10px 28px', boxShadow: '0 2px 12px #0006', cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s'
-          }}>커튼 애니메이션</button>
-          {/* 왼쪽 커튼 (애니메이션) */}
-          <div style={leftCurtainStyle} />
-          {/* 오른쪽 커튼 (애니메이션) */}
-          <div style={rightCurtainStyle} />
-          {/* StickmanGuitar */}
-          <div style={{
-            position: 'absolute',
-            left: '20%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 2
-          }}>
-            <StickmanGuitar width={200} height={200} />
-          </div>
-          {/* StickmanDrum + StickmanVocal */}
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            top: '30%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 2
-          }}>
-            <StickmanDrum width={200} height={200} />
-          </div>
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            top: '60%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 2
-          }}>
-            <StickmanVocal width={200} height={200} />
-          </div>
-          {/* StickmanPiano */}
-          <div style={{
-            position: 'absolute',
-            right: '20%',
-            top: '50%',
-            transform: 'translate(50%, -50%)',
-            zIndex: 2
-          }}>
-            <StickmanPiano width={200} height={200} />
-          </div>
+        <div style={{display: 'flex', flexDirection: 'column',gap: 100, width: '20vw', height: '90vh', background: 'transparent',alignContent: 'center',justifyContent: 'center'}}>
+          <StickmanDrum width={200} height={200} />
+          <StickmanGuitar width={200} height={200} />
+        </div>
+        <div ref={phaserRef} style={{ width: '40vw', height: '90vh', overflow: 'hidden', background: 'transparent',alignContent: 'center' }} />
+        <div style={{display: 'flex', flexDirection: 'column',gap: 100, width: '20vw', height: '90vh', background: 'transparent',alignContent: 'center',justifyContent: 'center'}}>
+          <StickmanVocal width={200} height={200} />
+          <StickmanPiano width={200} height={200} />
         </div>
       </div>
     </div>
