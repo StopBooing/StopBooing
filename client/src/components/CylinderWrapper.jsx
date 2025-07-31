@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SESSION_COLORS } from '../game/constants/GameConstants.js';
 import { NONE } from 'phaser';
 
-const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'piano', currentSession = 'piano' }) => {
+const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'piano', currentSession = 'piano', countdownComplete = false }) => {
   const [curtainOpen, setCurtainOpen] = useState(false);
   const [musicNotes, setMusicNotes] = useState([]);
   const [speechText1, setSpeechText1] = useState('');
@@ -10,8 +10,20 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
   const [showSpeech1, setShowSpeech1] = useState(false);
   const [showSpeech2, setShowSpeech2] = useState(false);
   
-  // 말풍선 텍스트 배열
-  const speechBubbleTexts = [
+  // 전역 말풍선 상태 관리
+  const [globalSpeechState, setGlobalSpeechState] = useState({
+    currentSession: null,
+    isInitialPhase: true,
+    initialPhaseComplete: false,
+    nextSpeaker: null,
+    nextArea: null
+  });
+  
+  // 전역 타이머 ID 저장 (컴포넌트 간 공유를 위해)
+  const globalTimerRef = useRef(null);
+  
+  // 정기 단계 말풍선 텍스트 배열
+  const regularSpeechBubbleTexts = [
     '유후~',
     '좋았어!',
     '앗싸~',
@@ -19,46 +31,137 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
     '화이팅!',
     '아 뭐해 ㅡㅡ',
     '재밌당 ><',
-    '흠..'
+    '흠..',
+    '(집중중..)'
   ];
   
-  // 무작위 텍스트 선택 함수
-  const getRandomSpeechText = () => {
-    const randomIndex = Math.floor(Math.random() * speechBubbleTexts.length);
-    return speechBubbleTexts[randomIndex];
+  // 초기 단계 말풍선 텍스트 배열 (인사용)
+  const initialSpeechBubbleTexts = [
+    '인호야 잘하자', 
+    '2분반 사랑해',
+    '얘들아 수고했어',
+    '빠이링'
+  ];
+  
+  // 정기 단계 무작위 텍스트 선택 함수
+  const getRandomRegularSpeechText = () => {
+    const randomIndex = Math.floor(Math.random() * regularSpeechBubbleTexts.length);
+    return regularSpeechBubbleTexts[randomIndex];
+  };
+  
+  // 초기 단계 무작위 텍스트 선택 함수
+  const getRandomInitialSpeechText = () => {
+    const randomIndex = Math.floor(Math.random() * initialSpeechBubbleTexts.length);
+    return initialSpeechBubbleTexts[randomIndex];
   };
   
   // 컴포넌트 마운트 시 한 번만 텍스트 설정
   useEffect(() => {
-    setSpeechText1(getRandomSpeechText());
-    setSpeechText2(getRandomSpeechText());
+    setSpeechText1(getRandomInitialSpeechText()); // 초기 단계용 텍스트
+    setSpeechText2(getRandomInitialSpeechText()); // 초기 단계용 텍스트
   }, [sessionType]); // sessionType이 변경될 때만 새로운 텍스트 생성
+  
+  // 세션별 초기 순서 설정
+  const getInitialOrder = (sessionType) => {
+    switch (sessionType) {
+      case 'drum': return 0; // 첫 번째
+      case 'guitar': return 1; // 두 번째
+      case 'vocal': return 2; // 세 번째
+      case 'piano': return 3; // 네 번째
+      default: return 0;
+    }
+  };
+  
+  // 세션별 말풍선 타이밍 설정 (10초 주기)
+  const getSpeechTiming = (sessionType) => {
+    const baseInterval = 10000; // 10초 주기
+    const sessionOrder = getInitialOrder(sessionType);
+    
+    // 각 세션마다 영역 1 또는 2 중 하나만 선택
+    const useArea1 = Math.random() < 0.5; // 50% 확률로 영역 1 선택
+    
+    return {
+      interval: baseInterval,
+      initialDelay: sessionOrder * 2000, // 세션별로 2초씩 차이
+      useArea1: useArea1, // 영역 1 사용 여부
+      area1Offset: 0, // 영역1은 기본 타이밍
+      area2Offset: 2500 // 영역2는 2.5초 후 시작 (영역1과 겹치지 않도록)
+    };
+  };
+  
+  // 랜덤 세션과 영역 선택 함수
+  const getRandomSessionAndArea = () => {
+    const sessions = ['drum', 'guitar', 'vocal', 'piano'];
+    const areas = [1, 2]; // 영역 1 또는 2
+    
+    const randomSession = sessions[Math.floor(Math.random() * sessions.length)];
+    const randomArea = areas[Math.floor(Math.random() * areas.length)];
+    
+    return { session: randomSession, area: randomArea };
+  };
   
   // 말풍선 애니메이션 타이머 설정
   useEffect(() => {
-    const showSpeech1Timer = setInterval(() => {
-      setShowSpeech1(true);
-      setTimeout(() => setShowSpeech1(false), 1000); // 1초 후 숨김
-    }, 5000); // 5초마다 반복
+    // 카운트다운이 완료되지 않았으면 말풍선 시작하지 않음
+    if (!countdownComplete) {
+      return;
+    }
     
-    const showSpeech2Timer = setInterval(() => {
-      setShowSpeech2(true);
-      setTimeout(() => setShowSpeech2(false), 1000); // 1초 후 숨김
-    }, 5000); // 5초마다 반복
+    console.log(`${sessionType} 세션 말풍선 시작`);
+    const timing = getSpeechTiming(sessionType);
     
-    // 초기 실행 (즉시 시작)
-    setShowSpeech1(true);
-    setShowSpeech2(true);
-    setTimeout(() => {
-      setShowSpeech1(false);
-      setShowSpeech2(false);
-    }, 3000);
+    // 초기 단계: 세션별로 순서대로 한마디씩 (선택된 영역만)
+    const initialTimer = setTimeout(() => {
+      if (timing.useArea1) {
+        setShowSpeech1(true);
+        setTimeout(() => {
+          setShowSpeech1(false);
+        }, 2000); // 초기 말풍선은 2초만 표시
+      } else {
+        setShowSpeech2(true);
+        setTimeout(() => {
+          setShowSpeech2(false);
+        }, 2000); // 초기 말풍선은 2초만 표시
+      }
+    }, timing.initialDelay);
+    
+    // 전역 정기 타이머 시작 (한 번만 실행되도록)
+    const startGlobalTimer = () => {
+      if (globalTimerRef.current) return; // 이미 실행 중이면 중복 실행 방지
+      
+      globalTimerRef.current = setInterval(() => {
+        const { session: randomSession, area: randomArea } = getRandomSessionAndArea();
+        setGlobalSpeechState(prev => ({
+          ...prev,
+          nextSpeaker: randomSession,
+          nextArea: randomArea
+        }));
+        
+        // 2초 후 말풍선 숨김
+        setTimeout(() => {
+          setGlobalSpeechState(prev => ({
+            ...prev,
+            nextSpeaker: null,
+            nextArea: null
+          }));
+        }, 2000);
+      }, 10000); // 10초마다 랜덤 세션과 영역 선택
+    };
+    
+    // 초기 단계 완료 후 전역 타이머 시작
+    const globalTimerStart = setTimeout(() => {
+      startGlobalTimer();
+    }, 8000); // 모든 초기 말풍선 완료 후 시작
     
     return () => {
-      clearInterval(showSpeech1Timer);
-      clearInterval(showSpeech2Timer);
+      clearTimeout(initialTimer);
+      clearTimeout(globalTimerStart);
+      if (globalTimerRef.current) {
+        clearInterval(globalTimerRef.current);
+        globalTimerRef.current = null;
+      }
     };
-  }, [sessionType]);
+  }, [sessionType, countdownComplete]);
 
   // 세션별 대표 색상 가져오기
   const sessionColor = SESSION_COLORS[sessionType]?.TAP || SESSION_COLORS.piano.TAP;
@@ -276,14 +379,14 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           overflow: 'hidden',
           borderRadius: '8px',
           border: '2px dashed blue',
-          backgroundImage: showSpeech1 ? 'url(/assets/booth/talk.png)' : 'none',
+          backgroundImage: (showSpeech1 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 1)) ? 'url(/assets/booth/talk.png)' : 'none',
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: showSpeech1 ? 1 : 0,
+          opacity: (showSpeech1 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 1)) ? 1 : 0,
           transition: 'opacity 0.3s ease-in-out'
                       }}>
                 <span style={{
@@ -294,7 +397,7 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
                   padding: '5px',
                   marginBottom: '10px',
                   textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-                  opacity: showSpeech1 ? 1 : 0,
+                  opacity: (showSpeech1 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 1)) ? 1 : 0,
                   transition: 'opacity 0.3s ease-in-out'
                 }}>
                   {speechText1}
@@ -313,7 +416,7 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           overflow: 'hidden',
           borderRadius: '8px',
           border: '2px dashed blue',
-          backgroundImage: showSpeech2 ? 'url(/assets/booth/talk.png)' : 'none',
+          backgroundImage: (showSpeech2 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 2)) ? 'url(/assets/booth/talk.png)' : 'none',
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
@@ -321,7 +424,7 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           alignItems: 'center',
           justifyContent: 'center',
           transform: 'scaleX(-1)', // 좌우반전
-          opacity: showSpeech2 ? 1 : 0,
+          opacity: (showSpeech2 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 2)) ? 1 : 0,
           transition: 'opacity 0.3s ease-in-out'
         }}>
           <span style={{
@@ -333,7 +436,7 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
             textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
             marginBottom: '10px',
             transform: 'scaleX(-1)', // 텍스트도 다시 원래 방향으로
-            opacity: showSpeech2 ? 1 : 0,
+            opacity: (showSpeech2 || (globalSpeechState.nextSpeaker === sessionType && globalSpeechState.nextArea === 2)) ? 1 : 0,
             transition: 'opacity 0.3s ease-in-out'
                       }}>
               {speechText2}

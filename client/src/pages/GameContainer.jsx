@@ -16,6 +16,8 @@ export default function GameContainer({ nickname, song, session }) {
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
   const [accuracy, setAccuracy] = useState(100); // 정확도 (100%로 시작)
+  const [countdown, setCountdown] = useState(0); // 카운트다운 상태 (0이면 비활성화)
+  const [countdownComplete, setCountdownComplete] = useState(false); // 카운트다운 완료 상태
   
   // 각 세션별 정확도 상태
   const [sessionAccuracies, setSessionAccuracies] = useState({
@@ -62,6 +64,38 @@ export default function GameContainer({ nickname, song, session }) {
     
     // 게임에서 정확도 업데이트 이벤트를 받을 수 있도록 설정
     game.events.on('accuracyUpdate', handleAccuracyUpdate);
+    
+    // 카운트다운 이벤트 리스너 추가
+    const handleCountdown = (count) => {
+      console.log('React에서 카운트다운 이벤트 받음:', count);
+      setCountdown(count);
+      
+      // 카운트다운이 완료되면 (0이 되면) 완료 상태로 설정
+      if (count === 0) {
+        setCountdownComplete(true);
+      }
+    };
+    
+    // 씬이 생성된 후 이벤트 리스너 등록
+    const setupSceneEvents = () => {
+      const scene = game.scene.getScene('JamScene');
+      if (scene) {
+        scene.events.on('countdown', handleCountdown);
+        console.log('JamScene 이벤트 리스너 등록 완료');
+        
+        // 이벤트 리스너가 등록된 후 카운트다운 시작 신호 전달
+        scene.events.emit('readyForCountdown');
+      } else {
+        // 씬이 아직 준비되지 않았으면 잠시 후 다시 시도
+        setTimeout(setupSceneEvents, 100);
+      }
+    };
+    
+    // 게임이 준비되면 씬 이벤트 설정
+    game.events.once('ready', setupSceneEvents);
+    
+    // 백업: 직접 씬에 접근 시도
+    setTimeout(setupSceneEvents, 500);
 
     const handleResize = () => {
       if (game && game.scale) {
@@ -83,6 +117,13 @@ export default function GameContainer({ nickname, song, session }) {
       window.removeEventListener('resize', handleResize);
       clearInterval(timer);
       game.events.off('accuracyUpdate', handleAccuracyUpdate);
+      
+      // 씬에서 이벤트 리스너 제거
+      const scene = game.scene.getScene('JamScene');
+      if (scene) {
+        scene.events.off('countdown', handleCountdown);
+      }
+      
       game.destroy(true);
     };
   }, []); // session과 backgroundColorHex 의존성 제거
@@ -125,8 +166,37 @@ export default function GameContainer({ nickname, song, session }) {
       display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh',
       background: 'linear-gradient(180deg, #18171c 0%, #23222a 100%)', // 어두운 Deemo 스타일
       overflow: 'hidden',
-      fontFamily: "'Noto Serif KR', serif"
+      fontFamily: "'Noto Serif KR', serif",
+      position: 'relative'
     }}>
+      
+      {/* 카운트다운 오버레이 */}
+      {countdown > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            fontSize: '120px',
+            color: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+            fontWeight: 'bold',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
+            userSelect: 'none'
+          }}>
+            {countdown}
+          </div>
+        </div>
+      )}
       {/* 상단 바 */}
       <div style={{
         width: '100vw', height: '10vh', background: 'rgba(24,23,28,0.95)', color: '#f5f5f5',
@@ -234,10 +304,10 @@ export default function GameContainer({ nickname, song, session }) {
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '90vh'}}>  
         {/* 왼쪽 영역 */}
         <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" currentSession={session} position={{x: 0, y: 20}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" currentSession={session} position={{x: 0, y: 20}} countdownComplete={countdownComplete}>
             <StickmanDrum width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" currentSession={session} position={{x: 30, y: 10}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" currentSession={session} position={{x: 30, y: 10}} countdownComplete={countdownComplete}>
             <StickmanGuitar width={200} height={200} />
           </CylinderWrapper>
         </div>
@@ -251,10 +321,10 @@ export default function GameContainer({ nickname, song, session }) {
         }} />
         {/* 오른쪽 영역 */}
         <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal" currentSession={session}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal" currentSession={session} countdownComplete={countdownComplete}>
             <StickmanVocal width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" currentSession={session} position={{x: 0, y: 30}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" currentSession={session} position={{x: 0, y: 30}} countdownComplete={countdownComplete}>
             <StickmanPiano width={200} height={200} />
           </CylinderWrapper>
         </div>

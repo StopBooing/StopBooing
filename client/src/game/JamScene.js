@@ -106,9 +106,12 @@ export default class JamScene extends Phaser.Scene {
     this.createSessionUI();
     this.setupKeyboardInput();
     
-    // 카운트다운 시작
-    console.log('카운트다운 시작 호출');
-    this.startCountdown();
+    // React에서 이벤트 리스너 등록 완료 신호를 기다림
+    this.events.once('readyForCountdown', () => {
+      console.log('React 이벤트 리스너 등록 완료, 카운트다운 시작');
+      this.startCountdown();
+    });
+    
     console.log('JamScene create() 완료');
   }
 
@@ -471,11 +474,15 @@ export default class JamScene extends Phaser.Scene {
     
     this.countdownStarted = true;
     
+    // 입력 비활성화
+    this.input.keyboard.enabled = false;
+    this.input.mouse.enabled = false;
+
     let count = 3;
-    const countdownText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 3, count, { 
-      fontSize: '72px', // 기존 96px에서 72px로 줄임
-      color: '#fff' 
-    }).setOrigin(0.5);
+    
+    // 초기 카운트다운 이벤트 발생
+    console.log('JamScene에서 카운트다운 이벤트 발생:', count);
+    this.events.emit('countdown', count);
 
     this.countdownTimer = this.time.addEvent({
       delay: 1000,
@@ -483,12 +490,21 @@ export default class JamScene extends Phaser.Scene {
         count--;
         console.log(`카운트다운: ${count}`);
         if (count > 0) {
-          countdownText.setText(count);
+          // 카운트다운 이벤트 발생
+          console.log('JamScene에서 카운트다운 이벤트 발생:', count);
+          this.events.emit('countdown', count);
         } else {
           console.log('카운트다운 완료, startSongTracker 시작');
-          countdownText.destroy();
+          // 카운트다운 완료 이벤트 발생
+          console.log('JamScene에서 카운트다운 완료 이벤트 발생: 0');
+          this.events.emit('countdown', 0);
           this.countdownTimer.remove();
           this.countdownTimer = null;
+          
+          // 입력 다시 활성화
+          this.input.keyboard.enabled = true;
+          this.input.mouse.enabled = true;
+          
           this.startSongTracker();
         }
       },
