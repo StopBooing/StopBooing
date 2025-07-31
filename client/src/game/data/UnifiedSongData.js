@@ -51,24 +51,24 @@ export default class UnifiedSongData {
       { time: 8.5, lane: 8, sessionType: 'drum' },
       
       // 마디 3
-      { time: 9, lane: 1, sessionType: 'vocal' },
+      { time: 9, lane: 1, sessionType: 'keyboard' },
       { time: 9.5, lane: 2, sessionType: 'drum' },
       { time: 10, lane: 3, sessionType: 'keyboard' },
-      { time: 10.5, lane: 4, sessionType: 'guitar' },
-      { time: 11, lane: 5, sessionType: 'drum' },
-      { time: 11.5, lane: 6, sessionType: 'vocal' },
+      { time: 10.5, lane: 4, sessionType: 'drum' },
+      { time: 11, lane: 5, sessionType: 'keyboard' },
+      { time: 11.5, lane: 6, sessionType: 'drum' },
       { time: 12, lane: 7, sessionType: 'keyboard' },
-      { time: 12.5, lane: 8, sessionType: 'guitar' },
+      { time: 12.5, lane: 8, sessionType: 'drum' },
       
       // 마디 4
-      { time: 13, lane: 1, sessionType: 'drum' },
-      { time: 13.5, lane: 2, sessionType: 'vocal' },
-      { time: 14, lane: 3, sessionType: 'keyboard' },
-      { time: 14.5, lane: 4, sessionType: 'guitar' },
-      { time: 15, lane: 5, sessionType: 'drum' },
+      { time: 13, lane: 1, sessionType: 'keyboard' },
+      { time: 13.5, lane: 2, sessionType: 'keyboard' },
+      { time: 14, lane: 3, sessionType: 'drum' },
+      { time: 14.5, lane: 4, sessionType: 'drum' },
+      { time: 15, lane: 5, sessionType: 'keyboard' },
       { time: 15.5, lane: 6, sessionType: 'keyboard' },
-      { time: 16, lane: 7, sessionType: 'guitar' },
-      { time: 16.5, lane: 8, sessionType: 'vocal' }
+      { time: 16, lane: 7, sessionType: 'drum' },
+      { time: 16.5, lane: 8, sessionType: 'drum' }
     ];
     
     unifiedPattern.forEach(p => {
