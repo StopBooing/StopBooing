@@ -39,7 +39,7 @@ export default function GameContainer({ nickname, song, session }) {
   });
 
   // 세션별 대표 색상 가져오기
-  const sessionColor = SESSION_COLORS[session]?.TAP || SESSION_COLORS.keyboard.TAP;
+  const sessionColor = SESSION_COLORS[mySession]?.TAP || SESSION_COLORS.keyboard.TAP;
   const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
 
   // 커튼 애니메이션 상태
@@ -184,7 +184,7 @@ export default function GameContainer({ nickname, song, session }) {
             alignItems: 'center', 
             gap: 5,
             // 조건부 스타일 적용
-                         ...(session === 'drum' && { // 'session'이 'drum'일 때만 아래 스타일 객체가 추가됨
+                         ...(mySession === 'drum' && { // 'session'이 'drum'일 때만 아래 스타일 객체가 추가됨
                padding: '10px 20px',
                border: '4px solid #cc00cc',
                borderRadius: '8px',

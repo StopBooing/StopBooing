@@ -55,15 +55,27 @@ export default function StickmanVocal({width, height}) {
         console.log('HITfromSERVER_VOCAL IN VOCAL',type);
         console.log('VOCAL: type === vocal?', type === 'vocal');
         if(type === 'vocal'){
-            console.log('VOCAL: 애니메이션 실행!');
-            if(singTrigger) {
-              singTrigger.fire();
-            }
+          const availableTriggers = [singTrigger].filter(trigger => trigger);
+          if(availableTriggers.length > 0){
+            const randomTrigger = availableTriggers[Math.floor(Math.random() * availableTriggers.length)];
+            console.log('랜덤 트리거 파이어:', randomTrigger);
+            randomTrigger.fire();
+          }
         }
+    };
+
+    const handleVocalMissAnimation = () => {
+      console.log('보컬 miss 애니메이션 트리거');
+      if(annoyingTrigger) {
+        annoyingTrigger.fire();
+      }
     };
     
     socket.off('HITfromSERVER_VOCAL');
     socket.on('HITfromSERVER_VOCAL', handleHitFromServer);
+    
+    socket.off('VOCAL_MISS_ANIMATION');
+    socket.on('VOCAL_MISS_ANIMATION', handleVocalMissAnimation);
     
     socket.on('ACCURACYfromSERVER',(data)=>{
         // console.log('ACCURACYfromSERVER',data);
@@ -71,6 +83,7 @@ export default function StickmanVocal({width, height}) {
     
     return () => {
       socket.off('HITfromSERVER_VOCAL', handleHitFromServer);
+      socket.off('VOCAL_MISS_ANIMATION', handleVocalMissAnimation);
       socket.off('ACCURACYfromSERVER');
     };
   },[singTrigger,annoyingTrigger,legMoveTrigger,makeHandlingTrigger]);

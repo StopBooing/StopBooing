@@ -72,7 +72,6 @@ export const SESSION_COLORS = {
     TAP: 0xff0066,    // 분홍색
     HIT: 0xff99cc     // 매우 연한 분홍색
   },
-
 };
 
 // 노트 색상 (하위 호환성)

@@ -50,8 +50,9 @@ const ComboDisplay = ({ combo, accuracy, score }) => {
   return (
     <div style={{
       position: 'absolute',
-      top: '120px',
-      right: '20px',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
       zIndex: 1000,
       textAlign: 'center',
       fontFamily: 'Arial, sans-serif',
@@ -84,7 +85,7 @@ const ComboDisplay = ({ combo, accuracy, score }) => {
       )}
       
       {/* 정확도 표시 */}
-      {accuracy !== undefined && (
+      {/* {accuracy !== undefined && (
         <div style={{
           fontSize: '18px',
           color: '#ffffff',
@@ -96,10 +97,10 @@ const ComboDisplay = ({ combo, accuracy, score }) => {
         }}>
           Accuracy: {accuracy}%
         </div>
-      )}
+      )} */}
       
       {/* 점수 표시 */}
-      {score !== undefined && (
+      {/* {score !== undefined && (
         <div style={{
           fontSize: '16px',
           color: '#ffff00',
@@ -110,7 +111,7 @@ const ComboDisplay = ({ combo, accuracy, score }) => {
         }}>
           Score: {score.toLocaleString()}
         </div>
-      )}
+      )} */}
       
       <style jsx>{`
         @keyframes pulse {

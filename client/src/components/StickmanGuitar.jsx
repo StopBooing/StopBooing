@@ -6,6 +6,7 @@ import socket from '../services/socket';
 // 편집기에서 만든 이름들
 const STATE_MACHINE = "State Machine 1";
 const TRIGGER_NAME  = "playTrigger";   // Trigger (play)
+const ANNOYING_TRIGGER  = "annoyingTrigger";   // Trigger (play)
 // ──────────────────────────────
 
 export default function StickmanGuitar({width, height}) {
@@ -28,27 +29,43 @@ export default function StickmanGuitar({width, height}) {
     STATE_MACHINE,
     TRIGGER_NAME
   );
+  const annoyingTrigger = useStateMachineInput(
+    rive,
+    STATE_MACHINE,
+    ANNOYING_TRIGGER
+  );
   useEffect(()=>{
     console.log('GUITAR: useEffect 실행됨');
     
     const handleHitFromServer = (type) => {
-        console.log('HITfromSERVER_GUITAR IN GUITAR',type);
-        console.log('GUITAR: type === guitar?', type === 'guitar');
         if(type === 'guitar'){
-          console.log('GUITAR: 애니메이션 실행!');
-          if(playTrigger) {
-            playTrigger.fire();
+          const availableTriggers = [playTrigger].filter(trigger => trigger);
+          if(availableTriggers.length > 0){
+            const randomTrigger = availableTriggers[Math.floor(Math.random() * availableTriggers.length)];
+            console.log('랜덤 트리거 파이어:', randomTrigger);
+            randomTrigger.fire();
           }
         }
+    };
+
+    const handleGuitarMissAnimation = () => {
+      console.log('기타 miss 애니메이션 트리거');
+      if(annoyingTrigger) {
+        annoyingTrigger.fire();
+      }
     };
     
     socket.off('HITfromSERVER_GUITAR');
     socket.on('HITfromSERVER_GUITAR', handleHitFromServer);
     
+    socket.off('GUITAR_MISS_ANIMATION');
+    socket.on('GUITAR_MISS_ANIMATION', handleGuitarMissAnimation);
+    
     return () => {
       socket.off('HITfromSERVER_GUITAR', handleHitFromServer);
+      socket.off('GUITAR_MISS_ANIMATION', handleGuitarMissAnimation);
     };
-  },[playTrigger]); 
+  },[playTrigger, annoyingTrigger]); 
 
 //   // 디버깅용 로그
 //   console.log("Rive instance:", rive);

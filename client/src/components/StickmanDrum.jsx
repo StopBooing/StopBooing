@@ -49,29 +49,33 @@ export default function StickmanGuitar({width, height}) {
     ANOYING_TRIGGER
   );
   useEffect(()=>{
-    console.log('DRUM: useEffect 실행됨');
-    
-        const handleHitFromServer = (type) => {
-      console.log('HITfromSERVER_DRUM IN DRUM',type);
-      console.log('DRUM: type === drum?', type === 'drum');
-        if(type === 'drum'){
-          console.log('DRUM: 애니메이션 실행!');
-          if(rightHitTrigger) {
-            rightHitTrigger.fire();
-          }
+    const handleHitFromServer = (type) => {
+      if(type === 'drum'){
+        const availableTriggers = [rightHitTrigger, leftHitTrigger, hitTrigger].filter(trigger => trigger);
+        if(availableTriggers.length > 0){
+          const randomTrigger = availableTriggers[Math.floor(Math.random() * availableTriggers.length)];
+          console.log('랜덤 트리거 파이어:', randomTrigger);
+          randomTrigger.fire();
         }
+      }
     };
-    
+
+    const handleDrumMissAnimation = () => {
+      console.log('드럼 miss 애니메이션 트리거');
+      if(anoyingTrigger) {
+        anoyingTrigger.fire();
+      }
+    };
+
     socket.off('HITfromSERVER_DRUM');
     socket.on('HITfromSERVER_DRUM', handleHitFromServer);
     
-    socket.off('ACCURACYfromSERVER');
-    socket.on('ACCURACYfromSERVER',(data)=>{
-        console.log('ACCURACYfromSERVER',data);
-    });
+    socket.off('DRUM_MISS_ANIMATION');
+    socket.on('DRUM_MISS_ANIMATION', handleDrumMissAnimation);
     
     return () => {
       socket.off('HITfromSERVER_DRUM', handleHitFromServer);
+      socket.off('DRUM_MISS_ANIMATION', handleDrumMissAnimation);
       socket.off('ACCURACYfromSERVER');
     };
   },[rightHitTrigger,hitTrigger,leftHitTrigger,anoyingTrigger]);

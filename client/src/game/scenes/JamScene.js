@@ -156,26 +156,19 @@ export default class JamScene extends Phaser.Scene {
     const displayName = sessionNames[this.sessionType] || this.sessionType;
     
     // 세션별 UI 표시
-    this.add.text(400, 50, `${displayName} 세션`, { fontSize: '32px' }).setOrigin(0.5);
+    // this.add.text(400, 50, `${displayName} 세션`, { fontSize: '32px' }).setOrigin(0.5);
     
     // 세션별 색상 안내
     const sessionColors = SESSION_COLORS[this.sessionType] || SESSION_COLORS.keyboard;
     const sessionColorHex = '#' + sessionColors.TAP.toString(16).padStart(6, '0');
     
-    this.sessionColorText = this.add.text(400, 90, `Your Color: ${sessionColorHex}`, {
-      fontSize: '18px',
-      color: sessionColorHex,
-      backgroundColor: '#000',
-      padding: { x: 10, y: 5 }
-    }).setOrigin(0.5);
+    // this.sessionColorText = this.add.text(400, 90, `Your Color: ${sessionColorHex}`, {
+    //   fontSize: '18px',
+    //   color: sessionColorHex,
+    //   backgroundColor: '#000',
+    //   padding: { x: 10, y: 5 }
+    // }).setOrigin(0.5);
     
-    // 협동 게임 안내
-    this.coopText = this.add.text(400, 120, `Hit only ${this.sessionType} notes! (Other notes are dimmed)`, {
-      fontSize: '16px',
-      color: '#ffff00',
-      backgroundColor: '#000',
-      padding: { x: 10, y: 5 }
-    }).setOrigin(0.5);
     
     // 카운트다운 시작
     this.startCountdown();
@@ -190,7 +183,7 @@ export default class JamScene extends Phaser.Scene {
     const areaY = 30; // 상단에서 30px 아래
   
     // 세션 이름 텍스트 (LED 스타일)
-    const sessionName = this.myInstrumentName ? this.myInstrumentName.toUpperCase() : 'PIANO';
+    const sessionName = this.myInstrumentName ? this.myInstrumentName.toUpperCase() : 'KEYBOARD';
     this.sessionNameText = this.add.text(areaX, areaY + 15, sessionName, {
       fontSize: '32px',
       color: '#ffffff',
@@ -217,7 +210,7 @@ export default class JamScene extends Phaser.Scene {
     });
     
     // 세션별 색상에 맞는 글로우 효과
-    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.keyboard?.TAP || 0x00cc00;
     const sessionColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
     
     // 색상별 글로우 효과 적용
@@ -227,8 +220,8 @@ export default class JamScene extends Phaser.Scene {
 
   getSessionDescription(sessionType) {
     switch (sessionType) {
-      case 'piano':
-        return 'Piano Session';
+      case 'keyboard':
+        return 'Keyboard Session';
       case 'guitar':
         return 'Guitar Session';
       case 'drum':
@@ -236,7 +229,7 @@ export default class JamScene extends Phaser.Scene {
       case 'vocal':
         return 'Vocal Session';
       default:
-        return 'Piano Session';
+        return 'Keyboard Session';
     }
   }
 
@@ -335,7 +328,7 @@ export default class JamScene extends Phaser.Scene {
 
   setupSessionBackground() {
     // 세션별 색상 가져오기
-    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.keyboard?.TAP || 0x00cc00;
     const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
     
     // 세션별 매우 연한 색상 계산
@@ -353,10 +346,10 @@ export default class JamScene extends Phaser.Scene {
       return (lighterR << 16) | (lighterG << 8) | lighterB;
     };
     
-    // 피아노 세션일 때는 더 연한 초록색 사용
+    // 키보드 세션일 때는 더 연한 초록색 사용
     let veryLightSessionColor;
-    if (this.myInstrumentName === 'piano') {
-      // 피아노용 더 연한 초록색 (0x88cc88)
+    if (this.myInstrumentName === 'keyboard') {
+      // 키보드용 더 연한 초록색 (0x88cc88)
       veryLightSessionColor = 0x98d198;
     } else {
       veryLightSessionColor = getVeryLightColor(sessionColor);
@@ -515,7 +508,7 @@ export default class JamScene extends Phaser.Scene {
     
     // 자신의 노트인지 확인하여 색상과 투명도 조정
     const isMyNote = noteBlock.sessionType === this.myInstrumentName;
-    const tapColor = SESSION_COLORS[noteBlock.sessionType]?.TAP || SESSION_COLORS.keyboard.TAP;
+    const tapColor = SESSION_COLORS[noteBlock.sessionType]?.TAP || SESSION_COLORS.keyboard?.TAP || 0x00cc00;
     
     visualBlock = this.add.rectangle(0, 0, baseWidth, blockHeight, tapColor).setOrigin(0.5, 0);
     

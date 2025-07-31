@@ -147,17 +147,17 @@ io.on('connection', (socket) => {
     console.log(`게임 시작 시도: ${playersWithInstrumentsCount}/${totalPlayers} 플레이어가 악기를 선택함`);
     
                    // 최소 2명 이상이고, 모든 플레이어가 악기를 선택했을 때만 게임 시작
-               if (totalPlayers >= 2 && playersWithInstrumentsCount === totalPlayers) {
-                 // 게임 시작 시 콤보 초기화
-                 globalCombo = 0;
-                 console.log('게임 시작 - 콤보 초기화:', globalCombo);
-                 
-                 io.emit('game_start', {
-                   users: users,
-                   globalCombo: globalCombo
-                 });
-                 console.log('게임 시작! 모든 플레이어가 준비됨');
-               } else {
+      if (totalPlayers >= 1 && playersWithInstrumentsCount === totalPlayers) {
+        // 게임 시작 시 콤보 초기화
+        globalCombo = 0;
+        console.log('게임 시작 - 콤보 초기화:', globalCombo);
+        
+        io.emit('game_start', {
+          users: users,
+          globalCombo: globalCombo
+        });
+        console.log('게임 시작! 모든 플레이어가 준비됨');
+      } else {
       // 조건이 충족되지 않으면 시작 시도한 플레이어에게 알림
       socket.emit('game_start_failed', {
         message: `게임을 시작하려면 최소 2명 이상의 플레이어가 모두 악기를 선택해야 합니다. (현재: ${playersWithInstrumentsCount}/${totalPlayers})`
@@ -221,8 +221,31 @@ io.on('connection', (socket) => {
       lane: data.lane,
       serverTime: data.serverTime,
       playerId: socket.id,
-      globalCombo: globalCombo
+      globalCombo: globalCombo,
+      accuracy: 'miss' // 정확도 정보 추가
     });
+
+    // 악기별 miss 애니메이션 이벤트 브로드캐스트
+    switch (data.instrument) {
+      case 'drum':
+        io.emit('DRUM_MISS_ANIMATION');
+        console.log('DRUM_MISS_ANIMATION 이벤트 브로드캐스트');
+        break;
+      case 'guitar':
+        io.emit('GUITAR_MISS_ANIMATION');
+        console.log('GUITAR_MISS_ANIMATION 이벤트 브로드캐스트');
+        break;
+      case 'vocal':
+        io.emit('VOCAL_MISS_ANIMATION');
+        console.log('VOCAL_MISS_ANIMATION 이벤트 브로드캐스트');
+        break;
+      case 'keyboard':
+        io.emit('KEYBOARD_MISS_ANIMATION');
+        console.log('KEYBOARD_MISS_ANIMATION 이벤트 브로드캐스트');
+        break;
+      default:
+        console.log(`알 수 없는 악기: ${data.instrument}`);
+    }
   });
 
   // 콤보 업데이트 이벤트

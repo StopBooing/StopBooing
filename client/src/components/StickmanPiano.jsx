@@ -55,15 +55,27 @@ export default function StickmanVocal({width, height}) {
       console.log('HITfromSERVER_PIANO IN PIANO',type);
       console.log('PIANO: type === keyboard?', type === 'keyboard');
       if(type === 'keyboard'){
-        console.log('PIANO: 애니메이션 실행!');
-        if(rightHitTrigger) {
-          rightHitTrigger.fire();
+        const availableTriggers = [rightHitTrigger, leftHitTrigger, doubleHitTrigger].filter(trigger => trigger);
+        if(availableTriggers.length > 0){
+          const randomTrigger = availableTriggers[Math.floor(Math.random() * availableTriggers.length)];
+          console.log('랜덤 트리거 파이어:', randomTrigger);
+          randomTrigger.fire();
         }
+      }
+    };
+
+    const handleKeyboardMissAnimation = () => {
+      console.log('키보드 miss 애니메이션 트리거');
+      if(annoyingTrigger) {
+        annoyingTrigger.fire();
       }
     };
     
     socket.off('HITfromSERVER_KEYBOARD');
     socket.on('HITfromSERVER_KEYBOARD', handleHitFromServer);
+    
+    socket.off('KEYBOARD_MISS_ANIMATION');
+    socket.on('KEYBOARD_MISS_ANIMATION', handleKeyboardMissAnimation);
     
     socket.off('ACCURACYfromSERVER');
     socket.on('ACCURACYfromSERVER',(data)=>{
@@ -72,6 +84,7 @@ export default function StickmanVocal({width, height}) {
     
     return () => {
       socket.off('HITfromSERVER_KEYBOARD', handleHitFromServer);
+      socket.off('KEYBOARD_MISS_ANIMATION', handleKeyboardMissAnimation);
       socket.off('ACCURACYfromSERVER');
     };
   },[leftHitTrigger,rightHitTrigger,doubleHitTrigger,annoyingTrigger]);
