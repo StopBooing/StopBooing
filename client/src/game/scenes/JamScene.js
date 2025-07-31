@@ -21,7 +21,7 @@ const songManager = new SongManager();
 export default class JamScene extends Phaser.Scene {
   constructor() {
     super({ key: 'JamScene' });
-    this.bpm = 100;
+    this.bpm = 164;
     this.myInstrumentName = null;
     this.sessionType = null;
     this.pressedKeys = {};
@@ -58,9 +58,9 @@ export default class JamScene extends Phaser.Scene {
     this.myInstrumentName = this.sys.game.registry.get('myInstrument');
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
     
-    // JamScene 진입 시점을 게임 시작 시간으로 설정
-    this.gameStartTime = performance.now();
-    console.log('JamScene 진입 - 게임 시작 시간 설정:', this.gameStartTime);
+    // 게임 시작 시간은 카운트다운 완료 시점에 설정할 예정
+    this.gameStartTime = null;
+    console.log('JamScene 진입 - 게임 시작 시간은 카운트다운 완료 후 설정');
 
     // 오디오 초기화
     this.bgMusic = new Audio('/assets/mp3/Oasis.mp3');
@@ -374,7 +374,7 @@ export default class JamScene extends Phaser.Scene {
     this.currentBar = 0;
 
     // BPM 설정 (120 BPM = 0.5초/박)
-    const bpm = 120;
+    const bpm = 160;
     this.barDuration = 60 / bpm * 4; // 4박자 = 2초
 
     // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
@@ -544,10 +544,15 @@ export default class JamScene extends Phaser.Scene {
         if (count > 0) {
           countdownText.setText(count);
         } else {
-          console.log('카운트다운 완료, startSongTracker 시작');
+          console.log('카운트다운 완료, 게임 시작 시간 설정 및 startSongTracker 시작');
           countdownText.destroy();
           this.countdownTimer.remove();
           this.countdownTimer = null;
+          
+          // 카운트다운 완료 시점을 게임 시작 시간으로 설정
+          this.gameStartTime = performance.now();
+          console.log('게임 시작 시간 설정:', this.gameStartTime);
+          
           this.startSongTracker();
         }
       },
