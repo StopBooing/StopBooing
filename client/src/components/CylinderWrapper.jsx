@@ -5,6 +5,60 @@ import { NONE } from 'phaser';
 const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'piano', currentSession = 'piano' }) => {
   const [curtainOpen, setCurtainOpen] = useState(false);
   const [musicNotes, setMusicNotes] = useState([]);
+  const [speechText1, setSpeechText1] = useState('');
+  const [speechText2, setSpeechText2] = useState('');
+  const [showSpeech1, setShowSpeech1] = useState(false);
+  const [showSpeech2, setShowSpeech2] = useState(false);
+  
+  // 말풍선 텍스트 배열
+  const speechBubbleTexts = [
+    '유후~',
+    '좋았어!',
+    '앗싸~',
+    '야호~!',
+    '화이팅!',
+    '아 뭐해 ㅡㅡ',
+    '재밌당 ><',
+    '흠..'
+  ];
+  
+  // 무작위 텍스트 선택 함수
+  const getRandomSpeechText = () => {
+    const randomIndex = Math.floor(Math.random() * speechBubbleTexts.length);
+    return speechBubbleTexts[randomIndex];
+  };
+  
+  // 컴포넌트 마운트 시 한 번만 텍스트 설정
+  useEffect(() => {
+    setSpeechText1(getRandomSpeechText());
+    setSpeechText2(getRandomSpeechText());
+  }, [sessionType]); // sessionType이 변경될 때만 새로운 텍스트 생성
+  
+  // 말풍선 애니메이션 타이머 설정
+  useEffect(() => {
+    const showSpeech1Timer = setInterval(() => {
+      setShowSpeech1(true);
+      setTimeout(() => setShowSpeech1(false), 1000); // 1초 후 숨김
+    }, 5000); // 5초마다 반복
+    
+    const showSpeech2Timer = setInterval(() => {
+      setShowSpeech2(true);
+      setTimeout(() => setShowSpeech2(false), 1000); // 1초 후 숨김
+    }, 5000); // 5초마다 반복
+    
+    // 초기 실행 (즉시 시작)
+    setShowSpeech1(true);
+    setShowSpeech2(true);
+    setTimeout(() => {
+      setShowSpeech1(false);
+      setShowSpeech2(false);
+    }, 3000);
+    
+    return () => {
+      clearInterval(showSpeech1Timer);
+      clearInterval(showSpeech2Timer);
+    };
+  }, [sessionType]);
 
   // 세션별 대표 색상 가져오기
   const sessionColor = SESSION_COLORS[sessionType]?.TAP || SESSION_COLORS.piano.TAP;
@@ -221,9 +275,30 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           zIndex: 100,
           overflow: 'hidden',
           borderRadius: '8px',
-          border: '2px dashed blue'
-        }}>
-          {/* 말풍선 1 생성 영역 */}
+          border: '2px dashed blue',
+          backgroundImage: showSpeech1 ? 'url(/assets/booth/talk.png)' : 'none',
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: showSpeech1 ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
+                      }}>
+                <span style={{
+                  color: '#000000',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  padding: '5px',
+                  marginBottom: '10px',
+                  textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                  opacity: showSpeech1 ? 1 : 0,
+                  transition: 'opacity 0.3s ease-in-out'
+                }}>
+                  {speechText1}
+                </span>
         </div>
         
         {/* 말풍선 생성 영역 2 */}
@@ -237,9 +312,32 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           zIndex: 100,
           overflow: 'hidden',
           borderRadius: '8px',
-          border: '2px dashed blue'
+          border: '2px dashed blue',
+          backgroundImage: showSpeech2 ? 'url(/assets/booth/talk.png)' : 'none',
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transform: 'scaleX(-1)', // 좌우반전
+          opacity: showSpeech2 ? 1 : 0,
+          transition: 'opacity 0.3s ease-in-out'
         }}>
-          {/* 말풍선 2 생성 영역 */}
+          <span style={{
+            color: '#000000',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            padding: '5px',
+            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+            marginBottom: '10px',
+            transform: 'scaleX(-1)', // 텍스트도 다시 원래 방향으로
+            opacity: showSpeech2 ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out'
+                      }}>
+              {speechText2}
+            </span>
         </div>
         
         {/* 바닥 조명 효과 */}
