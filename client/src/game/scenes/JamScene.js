@@ -46,6 +46,9 @@ export default class JamScene extends Phaser.Scene {
     // 게임 시작 시간 관련 변수
     this.gameStartTime = null;
     
+    // 전체 콤보 관련 변수
+    this.lastGlobalCombo = 0;
+    
     if (!window.jamSceneCountdownStarted) {
       window.jamSceneCountdownStarted = false;
     }
@@ -61,22 +64,24 @@ export default class JamScene extends Phaser.Scene {
   }
 
   create() {
-    // Deemo 스타일: 밝은 흰색 계열 배경
-    this.cameras.main.setBackgroundColor('#f7f6f3');
-    this.myInstrumentName = this.game.registry.get('myInstrument');
-    console.log(`JamScene create: registry에서 가져온 myInstrument:`, this.game.registry.get('myInstrument'));
-    console.log(`JamScene create: 설정된 myInstrumentName:`, this.myInstrumentName);
+    console.log('JamScene create() 시작');
     
+    // 세션별 그라데이션 배경 설정
+    this.setupSessionBackground();
+    this.myInstrumentName = this.game.registry.get('myInstrument');
+
     // SPAWN_Y는 카메라 높이에 의존하므로 create에서 계산
-    this.SPAWN_Y = 0;
+    this.SPAWN_Y = 50; // 화면 상단에서 50px 아래에서 시작
     this.HIT_LINE_Y = this.cameras.main.height - GAME_CONFIG.HIT_LINE_OFFSET;
     
     // SongManager를 통해 곡 데이터 로드하고 NoteBlock 인스턴스로 변환
     const noteData = this.songManager.getSongData(this.myInstrumentName);
-    console.log('로드된 노트 데이터:', noteData);
-    
-    // 모든 노트를 표시하되, 자신의 노트만 칠 수 있도록 함
+
     this.noteBlocks = noteData.map(data => new NoteBlock(data));
+    console.log('NoteBlock 인스턴스 생성 완료:', this.noteBlocks.length, '개');
+    
+    // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
+    this.previewTimeSec = 1; // 1초 동안 화면을 이동
     
     console.log(`총 노트 개수: ${this.noteBlocks.length}`);
     this.noteBlocks.forEach((note, index) => {
@@ -117,6 +122,7 @@ export default class JamScene extends Phaser.Scene {
     
     // 다른 플레이어의 정확도 수신 이벤트 리스너
     this.setupAccuracySync();
+
   }
 
   initAudio() {
@@ -173,6 +179,65 @@ export default class JamScene extends Phaser.Scene {
     
     // 카운트다운 시작
     this.startCountdown();
+
+    // 세션 표시 영역 추가
+    this.createSessionDisplayArea();
+  }
+
+  createSessionDisplayArea() {
+    // 세션 표시 영역 배경
+    const areaX = this.cameras.main.width / 2;
+    const areaY = 30; // 상단에서 30px 아래
+  
+    // 세션 이름 텍스트 (LED 스타일)
+    const sessionName = this.myInstrumentName ? this.myInstrumentName.toUpperCase() : 'PIANO';
+    this.sessionNameText = this.add.text(areaX, areaY + 15, sessionName, {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontWeight: 'bold',
+      stroke: '#00ffff',
+      strokeThickness: 2,
+      shadow: {
+        offsetX: 0,
+        offsetY: 0,
+        color: '#00ffff',
+        blur: 10,
+        fill: true
+      }
+    }).setOrigin(0.5, 0);
+    
+    // LED 글로우 애니메이션 추가
+    this.tweens.add({
+      targets: this.sessionNameText,
+      alpha: 0.7,
+      duration: 1000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // 세션별 색상에 맞는 글로우 효과
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const sessionColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
+    
+    // 색상별 글로우 효과 적용
+    this.sessionNameText.setShadow(0, 0, sessionColorHex, 15, true);
+    this.sessionNameText.setStroke(sessionColorHex, 3);
+  }
+
+  getSessionDescription(sessionType) {
+    switch (sessionType) {
+      case 'piano':
+        return 'Piano Session';
+      case 'guitar':
+        return 'Guitar Session';
+      case 'drum':
+        return 'Drum Session';
+      case 'vocal':
+        return 'Vocal Session';
+      default:
+        return 'Piano Session';
+    }
   }
 
   setupTimingGuideUI() {
@@ -180,7 +245,11 @@ export default class JamScene extends Phaser.Scene {
     this.RHYTHM_GAME_LEFT = 0;
     this.RHYTHM_GAME_RIGHT = this.cameras.main.width;
     this.HIT_LINE_Y = this.cameras.main.height - 150;
-    this.SPAWN_Y = 0;
+    this.SPAWN_Y = 50; // 화면 상단에서 50px 아래에서 시작
+    
+    // 디버깅: 게임 영역 크기 출력
+    console.log(`게임 영역 크기: ${this.cameras.main.width} x ${this.cameras.main.height}`);
+    console.log(`게임 영역: LEFT=${this.RHYTHM_GAME_LEFT}, RIGHT=${this.RHYTHM_GAME_RIGHT}, SPAWN_Y=${this.SPAWN_Y}, HIT_LINE_Y=${this.HIT_LINE_Y}`);
     this.noteSpeed = 0;
     const gameWidth = this.RHYTHM_GAME_RIGHT - this.RHYTHM_GAME_LEFT;
     const laneSpacing = gameWidth / GAME_CONFIG.LANE_COUNT;
@@ -199,28 +268,51 @@ export default class JamScene extends Phaser.Scene {
     this.lane6X = this.RHYTHM_GAME_LEFT + laneSpacing * 5.5;
     this.lane7X = this.RHYTHM_GAME_LEFT + laneSpacing * 6.5;
     this.lane8X = this.RHYTHM_GAME_LEFT + laneSpacing * 7.5;
-    // 기준선 (수평선) - 더 굵고 명확하게 표시
-    // 1. 검정색 굵은 선
-    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0x000000, 1)
+    // 기준선 (수평선) - LED 스타일로 빛나는 효과
+    // 1. 흰색 굵은 선 (글로우 효과)
+    const thickLine = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 1)
       .setOrigin(0)
-      .setLineWidth(8);
-    // 2. 노란색 얇은 선(겹쳐서 강조)
-    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffeb3b, 1)
+      .setLineWidth(8)
+      .setDepth(2000); // 높은 우선순위
+    
+    // 글로우 효과를 위한 추가 선들
+    const glowLine1 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.6)
       .setOrigin(0)
-      .setLineWidth(3);
+      .setLineWidth(12)
+      .setDepth(1999);
+    
+    const glowLine2 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.3)
+      .setOrigin(0)
+      .setLineWidth(16)
+      .setDepth(1998);
+    
+    const glowLine3 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.1)
+      .setOrigin(0)
+      .setLineWidth(20)
+      .setDepth(1997);
+    
+    // 2. 흰색 얇은 선(겹쳐서 강조)
+    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 1)
+      .setOrigin(0)
+      .setLineWidth(3)
+      .setDepth(2000); // 높은 우선순위
+    
+    // 노트 시각적 요소들을 그룹화
     this.noteVisualsGroup = this.add.group();
-    // 7개의 보조선(세로선) - 연한 회색
-    const guideLineXPositions = [
-      this.guideLine1X, this.guideLine2X, this.guideLine3X, this.guideLine4X,
-      this.guideLine5X, this.guideLine6X, this.guideLine7X
-    ];
-    guideLineXPositions.forEach(x => {
-      this.add.line(
-        0, 0,
-        x, this.SPAWN_Y, x, this.HIT_LINE_Y,
-        0xd6d3ce, 0.5
-      ).setOrigin(0);
-    });
+    
+    // 7개의 보조선(세로선) - 어두운 색상보다 살짝 연한 색
+    // const guideLineXPositions = [
+    //   this.guideLine1X, this.guideLine2X, this.guideLine3X, this.guideLine4X,
+    //   this.guideLine5X, this.guideLine6X, this.guideLine7X
+    // ];
+    // guideLineXPositions.forEach(x => {
+    //   this.add.line(
+    //     0, 0,
+    //     x, this.SPAWN_Y, x, this.HIT_LINE_Y,
+    //     0x212026, 0.8  // 0x18171c보다 살짝 연한 색상
+    //   ).setOrigin(0)
+    //    .setDepth(1000); // 낮은 우선순위
+    // });
     // 키 입력 표시 등 나머지 로직은 그대로
     this.keyPressIndicators = {};
     const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
@@ -241,6 +333,56 @@ export default class JamScene extends Phaser.Scene {
     }
   }
 
+  setupSessionBackground() {
+    // 세션별 색상 가져오기
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
+    
+    // 세션별 매우 연한 색상 계산
+    const getVeryLightColor = (color) => {
+      // 16진수 색상을 RGB로 변환
+      const r = (color >> 16) & 255;
+      const g = (color >> 8) & 255;
+      const b = color & 255;
+      
+      // 연한 색상으로 변환 (밝기 증가)
+      const lighterR = Math.min(255, r + 120);
+      const lighterG = Math.min(255, g + 120);
+      const lighterB = Math.min(255, b + 120);
+      
+      return (lighterR << 16) | (lighterG << 8) | lighterB;
+    };
+    
+    // 피아노 세션일 때는 더 연한 초록색 사용
+    let veryLightSessionColor;
+    if (this.myInstrumentName === 'piano') {
+      // 피아노용 더 연한 초록색 (0x88cc88)
+      veryLightSessionColor = 0x98d198;
+    } else {
+      veryLightSessionColor = getVeryLightColor(sessionColor);
+    }
+    
+    // 그라데이션 배경 생성
+    const graphics = this.add.graphics();
+    const height = this.cameras.main.height;
+    const halfHeight = height / 2;
+    
+    // 상단 절반: 어두운 검정
+    graphics.fillStyle(0x18171c);
+    graphics.fillRect(0, 0, this.cameras.main.width, halfHeight);
+    
+    // 하단 절반: 연한 그라데이션 (어두운 검정에서 연한 세션 색상으로)
+    graphics.fillGradientStyle(
+      0x18171c, // 시작 색상 (어두운 검정)
+      0x18171c, // 시작 색상 (어두운 검정)
+      veryLightSessionColor, // 끝 색상 (연한 세션 색상)
+      veryLightSessionColor, // 끝 색상 (연한 세션 색상)
+      0.6 // 알파값 (더 진하게)
+    );
+    graphics.fillRect(0, halfHeight, this.cameras.main.width, halfHeight);
+    graphics.setDepth(-1000); // 가장 뒤로 보내기
+  }
+
   startSongTracker() {
     this.currentBar = 0;
 
@@ -250,6 +392,7 @@ export default class JamScene extends Phaser.Scene {
 
     // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
     this.previewTimeSec = 2; // 2초 동안 화면을 이동 (더 부드러운 움직임)
+
     const travelDistance = this.HIT_LINE_Y - this.SPAWN_Y;
     this.noteSpeed = travelDistance / this.previewTimeSec;
 
@@ -380,9 +523,14 @@ export default class JamScene extends Phaser.Scene {
     if (!isMyNote) {
       visualBlock.setAlpha(0.3);
     }
-    
+
     noteBlock.blockHeight = blockHeight;
     const container = this.add.container(xPos, this.SPAWN_Y, [visualBlock]);
+    container.setDepth(3000); // 노트 블럭을 가장 높은 우선순위로 설정
+    
+    // 디버깅: 컨테이너 정보 출력
+    console.log(`Container created: x=${container.x}, y=${container.y}, depth=${container.depth}, visible=${container.visible}`);
+    
     this.noteVisualsGroup.add(container);
     
     console.log(`Visual note created: x=${xPos}, y=${this.SPAWN_Y}, width=${baseWidth}, height=${blockHeight}, color=${tapColor}, isMyNote=${isMyNote}`);
@@ -464,26 +612,33 @@ export default class JamScene extends Phaser.Scene {
       const now = this.getCurrentTime();
       const hitNoteBlock = this.findNoteBlockToHit(keyId, now);
       
-      if (hitNoteBlock) {
-        // 탭 노트 히트 처리
-        hitNoteBlock.hit(now);
-        
-        // 서버에 정확도 전송 (다른 플레이어들에게 브로드캐스트용)
-        socket.emit('note_accuracy', {
-          instrument: this.myInstrumentName,
-          lane: hitNoteBlock.lane,
-          accuracy: hitNoteBlock.accuracy,
-          serverTime: now
-        });
-        
-        this.updateComboAndScore(hitNoteBlock.accuracy);
-        this.showAccuracyText(hitNoteBlock.accuracy, hitNoteBlock.lane, hitNoteBlock);
-        
-        // 효과음 재생
-        this.playEffectSound(hitNoteBlock.accuracy);
-        
-        // console.log(`Tap Block HIT: lane ${hitNoteBlock.lane}, Acc: ${hitNoteBlock.accuracy}`);
-      } else {
+                   if (hitNoteBlock) {
+               // 탭 노트 히트 처리
+               hitNoteBlock.hit(now);
+               
+               // 서버에 정확도 전송 (다른 플레이어들에게 브로드캐스트용)
+               socket.emit('note_accuracy', {
+                 instrument: this.myInstrumentName,
+                 lane: hitNoteBlock.lane,
+                 accuracy: hitNoteBlock.accuracy,
+                 serverTime: now
+               });
+               
+               // 서버에 콤보 업데이트 요청
+               socket.emit('combo_update', {
+                 instrument: this.myInstrumentName,
+                 accuracy: hitNoteBlock.accuracy
+               });
+               
+               // 점수만 업데이트 (콤보는 서버에서 관리)
+               this.updateScore(hitNoteBlock.accuracy);
+               this.showAccuracyText(hitNoteBlock.accuracy, hitNoteBlock.lane, hitNoteBlock);
+               
+               // 효과음 재생
+               this.playEffectSound(hitNoteBlock.accuracy);
+               
+               // console.log(`Tap Block HIT: lane ${hitNoteBlock.lane}, Acc: ${hitNoteBlock.accuracy}`);
+             } else {
         // 자신의 노트가 아닌 경우 아무것도 하지 않음 (다른 플레이어의 정확도는 서버에서 받음)
         console.log(`No NoteBlock found for key '${keyId}' at this time.`);
       }
@@ -667,9 +822,6 @@ export default class JamScene extends Phaser.Scene {
       return;
     }
     
-    // 이전 콤보 저장
-    const previousCombo = this.judgmentManager.currentCombo;
-    
     // MISS 처리
     noteBlock.hit(currentTime);
     noteBlock.accuracy = 'miss';
@@ -684,41 +836,62 @@ export default class JamScene extends Phaser.Scene {
     // MISS 텍스트 표시
     this.showAccuracyText('miss', noteBlock.lane, noteBlock);
     
-    // 콤보 및 점수 업데이트
-    this.updateComboAndScore('miss');
+    // 점수만 업데이트 (콤보는 서버에서 관리)
+    this.updateScore('miss');
     this.playEffectSound('miss');
-    
-    // 콤보 브레이크 시 특별 이벤트 발생
-    if (previousCombo > 0) {
-      this.game.events.emit('comboBreak', previousCombo);
-      // console.log(`Combo broken! Previous combo: ${previousCombo}`);
-    }
     
     console.log(`자신의 노트 miss: ${noteBlock.sessionType} - 레인 ${noteBlock.lane}`);
   }
 
-  // 콤보 및 점수 업데이트 메서드
-  updateComboAndScore(accuracy) {
-    // console.log(`updateComboAndScore called with accuracy: ${accuracy}`);
+  // 점수 업데이트 (콤보는 서버에서 관리)
+  updateScore(accuracy) {
+    // console.log(`updateScore called with accuracy: ${accuracy}`);
     
-    const result = this.judgmentManager.updateScoreAndCombo(accuracy);
+    const result = this.judgmentManager.updateScore(accuracy);
     
     // React 컴포넌트에 게임 통계 업데이트 이벤트 발생
     this.game.events.emit('gameStatsUpdate', {
-      combo: result.combo,
+      combo: this.lastGlobalCombo || 0,
       accuracy: result.accuracy,
       score: result.totalScore
     });
     
     // 개별 이벤트도 발생 (하위 호환성)
     this.game.events.emit('accuracyUpdate', result.accuracy);
-    this.game.events.emit('comboUpdate', result.combo);
+    this.game.events.emit('comboUpdate', this.lastGlobalCombo || 0);
     
-    // console.log(`Score updated: +${result.score} (Total: ${result.totalScore}), Combo: ${result.combo}, Accuracy: ${result.accuracy}%`);
+    // console.log(`Score updated: +${result.score} (Total: ${result.totalScore}), Accuracy: ${result.accuracy}%`);
+  }
+
+  // 서버에서 받은 전체 콤보 업데이트
+  updateGlobalCombo(globalCombo) {
+    // 콤보 텍스트 업데이트
+    if (this.comboText) {
+      this.comboText.setText(`Combo: ${globalCombo}`);
+    }
+    
+    // 콤보 브레이크 시 특별 이벤트 발생 (콤보가 0이 되었을 때)
+    if (globalCombo === 0 && this.lastGlobalCombo > 0) {
+      this.game.events.emit('comboBreak', this.lastGlobalCombo);
+      console.log(`Global Combo broken! Previous combo: ${this.lastGlobalCombo}`);
+    }
+    
+    this.lastGlobalCombo = globalCombo;
+    
+    // React 컴포넌트에 콤보 업데이트 이벤트 발생
+    this.game.events.emit('comboUpdate', globalCombo);
   }
 
   // 다른 플레이어의 정확도 동기화 설정
   setupAccuracySync() {
+    // 게임 시작 시 초기 콤보 설정
+    socket.on('game_start', (data) => {
+      console.log('게임 시작 이벤트 수신:', data);
+      if (data.globalCombo !== undefined) {
+        this.updateGlobalCombo(data.globalCombo);
+      }
+    });
+
     socket.on('player_accuracy', (data) => {
       console.log(`player_accuracy 이벤트 수신:`, data);
       console.log(`내 악기: ${this.myInstrumentName}, 수신된 악기: ${data.instrument}`);
@@ -744,6 +917,17 @@ export default class JamScene extends Phaser.Scene {
       } else {
         console.log(`내 miss는 무시 (이미 처리됨)`);
       }
+      
+      // 전체 콤보 업데이트 (miss 시 0으로 초기화)
+      if (data.globalCombo !== undefined) {
+        this.updateGlobalCombo(data.globalCombo);
+      }
+    });
+
+    // 전체 콤보 업데이트 수신
+    socket.on('global_combo_update', (data) => {
+      console.log(`전체 콤보 업데이트 수신: ${data.globalCombo} (${data.lastInstrument} - ${data.lastAccuracy})`);
+      this.updateGlobalCombo(data.globalCombo);
     });
   }
 
@@ -983,8 +1167,10 @@ export default class JamScene extends Phaser.Scene {
       }
       
       // 소켓 이벤트 리스너 정리
+      socket.off('game_start');
       socket.off('player_accuracy');
       socket.off('player_miss');
+      socket.off('global_combo_update');
       
       // JudgmentManager 리셋
       this.judgmentManager.reset();

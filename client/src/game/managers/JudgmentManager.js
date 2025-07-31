@@ -79,6 +79,19 @@ export default class JudgmentManager {
     };
   }
 
+  // 점수만 업데이트 (콤보는 서버에서 관리)
+  updateScore(accuracy) {
+    const score = this.calculateScore(accuracy);
+    this.totalScore += score;
+    this.updateAccuracyStats(accuracy);
+    
+    return {
+      score,
+      totalScore: this.totalScore,
+      accuracy: this.currentAccuracy
+    };
+  }
+
   // 판정 색상 가져오기
   getJudgmentColor(accuracy) {
     return JUDGMENT_COLORS[accuracy.toUpperCase()] || '#ffffff';

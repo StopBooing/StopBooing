@@ -40,6 +40,7 @@ const PORT = process.env.PORT || 3001;
 
 let users = []; // { id: socket.id, nickname: '닉네임', instrument: '악기명' }
 let selectedInstruments = {}; // { instrument: socket.id } - 어떤 악기가 누구에게 선택되었는지
+let globalCombo = 0; // 전체 클라이언트의 종합 콤보
 
 app.use(express.json());
 
@@ -145,13 +146,18 @@ io.on('connection', (socket) => {
     
     console.log(`게임 시작 시도: ${playersWithInstrumentsCount}/${totalPlayers} 플레이어가 악기를 선택함`);
     
-    // 최소 2명 이상이고, 모든 플레이어가 악기를 선택했을 때만 게임 시작
-    if (totalPlayers >= 2 && playersWithInstrumentsCount === totalPlayers) {
-      io.emit('game_start', {
-        users: users
-      });
-      console.log('게임 시작! 모든 플레이어가 준비됨');
-    } else {
+                   // 최소 2명 이상이고, 모든 플레이어가 악기를 선택했을 때만 게임 시작
+               if (totalPlayers >= 2 && playersWithInstrumentsCount === totalPlayers) {
+                 // 게임 시작 시 콤보 초기화
+                 globalCombo = 0;
+                 console.log('게임 시작 - 콤보 초기화:', globalCombo);
+                 
+                 io.emit('game_start', {
+                   users: users,
+                   globalCombo: globalCombo
+                 });
+                 console.log('게임 시작! 모든 플레이어가 준비됨');
+               } else {
       // 조건이 충족되지 않으면 시작 시도한 플레이어에게 알림
       socket.emit('game_start_failed', {
         message: `게임을 시작하려면 최소 2명 이상의 플레이어가 모두 악기를 선택해야 합니다. (현재: ${playersWithInstrumentsCount}/${totalPlayers})`
@@ -205,12 +211,35 @@ io.on('connection', (socket) => {
   socket.on('note_miss', (data) => {
     console.log(`Miss 브로드캐스트: ${data.instrument} - 레인 ${data.lane}`);
     
-    // 모든 클라이언트에게 해당 악기의 miss 정보 브로드캐스트
+    // 전체 콤보 초기화 (miss 시)
+    globalCombo = 0;
+    console.log(`전체 콤보 초기화 (miss): ${globalCombo}`);
+    
+    // 모든 클라이언트에게 해당 악기의 miss 정보와 업데이트된 콤보 브로드캐스트
     io.emit('player_miss', {
       instrument: data.instrument,
       lane: data.lane,
       serverTime: data.serverTime,
-      playerId: socket.id
+      playerId: socket.id,
+      globalCombo: globalCombo
+    });
+  });
+
+  // 콤보 업데이트 이벤트
+  socket.on('combo_update', (data) => {
+    console.log(`콤보 업데이트: ${data.instrument} - ${data.accuracy}`);
+    
+    // perfect, good, bad인 경우 콤보 증가
+    if (data.accuracy === 'perfect' || data.accuracy === 'good' || data.accuracy === 'bad') {
+      globalCombo++;
+      console.log(`전체 콤보 증가: ${globalCombo}`);
+    }
+    
+    // 모든 클라이언트에게 업데이트된 콤보 브로드캐스트
+    io.emit('global_combo_update', {
+      globalCombo: globalCombo,
+      lastAccuracy: data.accuracy,
+      lastInstrument: data.instrument
     });
   });
 
