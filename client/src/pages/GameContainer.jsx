@@ -199,27 +199,6 @@ export default function GameContainer({ nickname, song, session }) {
             </span>
           </div>
 
-          {/* GUITAR 세션 */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            gap: 5,
-                         ...(session === 'guitar' && {
-               padding: '10px 20px',
-               border: '4px solid #ff6600',
-               borderRadius: '8px',
-               zIndex: 9999,
-               color: '#ff6600',
-               animation: 'sessionBorderGlow 2s ease-in-out infinite'
-             })
-          }}>
-            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>GUITAR</span>
-            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.guitar.TAP.toString(16) }}>
-              {sessionAccuracies.guitar.toFixed(1)}%
-            </span>
-          </div>
-
           {/* VOCAL 세션 */}
           <div style={{ 
             display: 'flex', 
@@ -238,6 +217,27 @@ export default function GameContainer({ nickname, song, session }) {
             <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>VOCAL</span>
             <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.vocal.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.vocal.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.vocal.TAP.toString(16) }}>
               {sessionAccuracies.vocal.toFixed(1)}%
+            </span>
+          </div>
+
+          {/* GUITAR 세션 */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 5,
+                         ...(session === 'guitar' && {
+               padding: '10px 20px',
+               border: '4px solid #ff6600',
+               borderRadius: '8px',
+               zIndex: 9999,
+               color: '#ff6600',
+               animation: 'sessionBorderGlow 2s ease-in-out infinite'
+             })
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>GUITAR</span>
+            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.guitar.TAP.toString(16) }}>
+              {sessionAccuracies.guitar.toFixed(1)}%
             </span>
           </div>
 
