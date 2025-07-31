@@ -52,8 +52,8 @@ export default function StickmanVocal({width, height}) {
     console.log('PIANO: useEffect 실행됨');
     
     const handleHitFromServer = (type) => {
-      console.log('HITfromSERVER_PIANO IN PIANO',type);
-      console.log('PIANO: type === keyboard?', type === 'keyboard');
+      // console.log('HITfromSERVER_PIANO IN PIANO',type);
+      // console.log('PIANO: type === keyboard?', type === 'keyboard');
       if(type === 'keyboard'){
         const availableTriggers = [rightHitTrigger, leftHitTrigger, doubleHitTrigger].filter(trigger => trigger);
         if(availableTriggers.length > 0){
@@ -65,7 +65,7 @@ export default function StickmanVocal({width, height}) {
     };
 
     const handleKeyboardMissAnimation = () => {
-      console.log('키보드 miss 애니메이션 트리거');
+      // console.log('키보드 miss 애니메이션 트리거');
       if(annoyingTrigger) {
         annoyingTrigger.fire();
       }

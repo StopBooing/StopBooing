@@ -61,6 +61,13 @@ export default class JamScene extends Phaser.Scene {
     // JamScene 진입 시점을 게임 시작 시간으로 설정
     this.gameStartTime = performance.now();
     console.log('JamScene 진입 - 게임 시작 시간 설정:', this.gameStartTime);
+
+    // 오디오 초기화
+    this.bgMusic = new Audio('/assets/mp3/Oasis.mp3');
+    this.bgMusic.loop = false;
+    this.bgMusic.volume = 0.7;
+    console.log('오디오 초기화 완료');
+
   }
 
   create() {
@@ -85,7 +92,7 @@ export default class JamScene extends Phaser.Scene {
     
     console.log(`총 노트 개수: ${this.noteBlocks.length}`);
     this.noteBlocks.forEach((note, index) => {
-      console.log(`노트 ${index}: ${note.toString()}, 세션: ${note.sessionType}`);
+      // console.log(`노트 ${index}: ${note.toString()}, 세션: ${note.sessionType}`);
     });
     
     // noteSpeed 계산은 previewTimeSec과 HIT_LINE_Y에 의존
@@ -125,20 +132,7 @@ export default class JamScene extends Phaser.Scene {
 
   }
 
-  initAudio() {
-    console.log('오디오 시스템 초기화');
-    
-    // 배경음악 설정
-    this.bgMusic = new Audio('/assets/background.mp3'); // 배경음악 파일 경로
-    this.bgMusic.loop = true;
-    this.bgMusic.volume = 0.5;
-    
-    // 효과음 설정
-    this.successSound = new Audio('/assets/success.mp3'); // 성공 효과음
-    this.failSound = new Audio('/assets/fail.mp3'); // 실패 효과음
-    
-    // 게임 시작 시간은 startSongTracker에서만 설정하므로 여기서는 설정하지 않음
-  }
+
 
   createSessionUI() {
     // 세션 타입 직접 사용 (매핑 제거)
@@ -391,7 +385,6 @@ export default class JamScene extends Phaser.Scene {
 
     // 배경음악 시작
     this.startBackgroundMusic();
-
     // NoteBlock들을 타이밍에 따라 스케줄링합니다.
     console.log(`Starting song tracker with ${this.noteBlocks.length} notes`);
     this.noteBlocks.forEach((noteBlock, index) => {
@@ -401,29 +394,29 @@ export default class JamScene extends Phaser.Scene {
       const now = this.getCurrentTime();
       const delaySec = spawnTime - now;
 
-      console.log(`Note ${index}: key=${noteBlock.key}, lane=${noteBlock.lane}, timing=${noteBlock.timing}, spawnTime=${spawnTime}, delaySec=${delaySec}`);
+      // console.log(`Note ${index}: key=${noteBlock.key}, lane=${noteBlock.lane}, timing=${noteBlock.timing}, spawnTime=${spawnTime}, delaySec=${delaySec}`);
 
       const spawnNote = () => {
         // 이미 스폰된 노트는 다시 스폰하지 않음
         if (noteBlock.visualObject) {
-          console.log(`Note already spawned: ${noteBlock.toString()}`);
+          // console.log(`Note already spawned: ${noteBlock.toString()}`);
           return;
         }
         
         // 디버깅: NoteBlock 정보 확인
-        console.log(`Spawning note: key=${noteBlock.key}, lane=${noteBlock.lane}, yPos=${this.keyLanes[noteBlock.key]}`);
+        // console.log(`Spawning note: key=${noteBlock.key}, lane=${noteBlock.lane}, yPos=${this.keyLanes[noteBlock.key]}`);
         
         const visualObject = this.spawnNoteVisual(noteBlock);
         noteBlock.visualObject = visualObject;
         this.scheduledNotes.push(noteBlock);
-        console.log(`Note spawned and added to scheduledNotes. Total: ${this.scheduledNotes.length}`);
+        // console.log(`Note spawned and added to scheduledNotes. Total: ${this.scheduledNotes.length}`);
       };
 
       if (delaySec <= 0) {
-        console.log(`Note ${index} spawning immediately (delaySec <= 0)`);
+        // console.log(`Note ${index} spawning immediately (delaySec <= 0)`);
         spawnNote();
       } else {
-        console.log(`Note ${index} scheduled to spawn in ${delaySec} seconds`);
+        // console.log(`Note ${index} scheduled to spawn in ${delaySec} seconds`);
         this.time.delayedCall(delaySec * 1000, spawnNote, [], this);
       }
     });
@@ -432,18 +425,14 @@ export default class JamScene extends Phaser.Scene {
   // 배경음악 시작 메서드 (노트와 동기화)
   startBackgroundMusic() {
     if (this.bgMusic) {
-      // 노트 스폰과 동일한 타이밍으로 배경음악 시작
-      const musicStartDelay = this.previewTimeSec; // 노트 스폰과 동일한 딜레이
-      
+      console.log('Oasis.mp3 배경음악 시작');
       this.bgMusic.currentTime = 0;
-      this.bgMusic.volume = 0.5;
-      
-      setTimeout(() => {
-        this.bgMusic.play().catch(error => {
-          console.warn('배경음악 재생 실패:', error);
-        });
-        console.log('배경음악 시작 (노트와 동기화됨)');
-      }, musicStartDelay * 1000);
+      this.bgMusic.play().catch(error => {
+        console.warn('배경음악 재생 실패:', error);
+      });
+      console.log('Oasis.mp3 배경음악 재생 시작');
+    } else {
+      console.warn('배경음악이 초기화되지 않았습니다.');
     }
   }
 
@@ -467,27 +456,27 @@ export default class JamScene extends Phaser.Scene {
   }
 
   // 효과음 재생 메서드
-  playEffectSound(accuracy) {
-    try {
-      if (accuracy === 'perfect' || accuracy === 'good') {
-        if (this.successSound) {
-          this.successSound.currentTime = 0; // 재생 위치 초기화
-          this.successSound.play().catch(error => {
-            console.warn('성공 효과음 재생 실패:', error);
-          });
-        }
-      } else if (accuracy === 'bad' || accuracy === 'miss') {
-        if (this.failSound) {
-          this.failSound.currentTime = 0; // 재생 위치 초기화
-          this.failSound.play().catch(error => {
-            console.warn('실패 효과음 재생 실패:', error);
-          });
-        }
-      }
-    } catch (error) {
-      console.warn('효과음 재생 중 오류:', error);
-    }
-  }
+  // playEffectSound(accuracy) {
+  //   try {
+  //     if (accuracy === 'perfect' || accuracy === 'good') {
+  //       if (this.successSound) {
+  //         this.successSound.currentTime = 0; // 재생 위치 초기화
+  //         this.successSound.play().catch(error => {
+  //           console.warn('성공 효과음 재생 실패:', error);
+  //         });
+  //       }
+  //     } else if (accuracy === 'bad' || accuracy === 'miss') {
+  //       if (this.failSound) {
+  //         this.failSound.currentTime = 0; // 재생 위치 초기화
+  //         this.failSound.play().catch(error => {
+  //           console.warn('실패 효과음 재생 실패:', error);
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.warn('효과음 재생 중 오류:', error);
+  //   }
+  // }
 
   spawnNoteVisual(noteBlock) {
     const xPos = this.keyLanes[noteBlock.key] || this.cameras.main.width / 2;
@@ -495,7 +484,7 @@ export default class JamScene extends Phaser.Scene {
       console.warn(`Key '${noteBlock.key}' not found in keyLanes:`, this.keyLanes);
     }
     
-    console.log(`Spawning visual for note: key=${noteBlock.key}, xPos=${xPos}, SPAWN_Y=${this.SPAWN_Y}`);
+    // console.log(`Spawning visual for note: key=${noteBlock.key}, xPos=${xPos}, SPAWN_Y=${this.SPAWN_Y}`);
     
     const gameWidth = this.RHYTHM_GAME_RIGHT - this.RHYTHM_GAME_LEFT;
     const laneSpacing = gameWidth / GAME_CONFIG.LANE_COUNT;
@@ -522,11 +511,11 @@ export default class JamScene extends Phaser.Scene {
     container.setDepth(3000); // 노트 블럭을 가장 높은 우선순위로 설정
     
     // 디버깅: 컨테이너 정보 출력
-    console.log(`Container created: x=${container.x}, y=${container.y}, depth=${container.depth}, visible=${container.visible}`);
+    // console.log(`Container created: x=${container.x}, y=${container.y}, depth=${container.depth}, visible=${container.visible}`);
     
     this.noteVisualsGroup.add(container);
     
-    console.log(`Visual note created: x=${xPos}, y=${this.SPAWN_Y}, width=${baseWidth}, height=${blockHeight}, color=${tapColor}, isMyNote=${isMyNote}`);
+    // console.log(`Visual note created: x=${xPos}, y=${this.SPAWN_Y}, width=${baseWidth}, height=${blockHeight}, color=${tapColor}, isMyNote=${isMyNote}`);
     return container;
   }
 
@@ -580,11 +569,8 @@ export default class JamScene extends Phaser.Scene {
       }
 
       // 오디오 시스템 초기화 (첫 번째 키 입력 시에만)
-      if (!this.audioInitialized) {
-        this.audioInitialized = true;
-        this.initAudio();
-        console.log('오디오 시스템 초기화 완료');
-      }
+      
+      
 
       // 키가 이미 눌려있지만, repeat이 아닌 경우 (예: 동시에 두 키를 눌렀을 때, 
       // 한 키가 먼저 인식되어 pressedKeys에 등록된 후 다른 키가 인식되는 경우)
@@ -628,7 +614,7 @@ export default class JamScene extends Phaser.Scene {
                this.showAccuracyText(hitNoteBlock.accuracy, hitNoteBlock.lane, hitNoteBlock);
                
                // 효과음 재생
-               this.playEffectSound(hitNoteBlock.accuracy);
+              //  this.playEffectSound(hitNoteBlock.accuracy);
                
                // console.log(`Tap Block HIT: lane ${hitNoteBlock.lane}, Acc: ${hitNoteBlock.accuracy}`);
              } else {
@@ -831,7 +817,7 @@ export default class JamScene extends Phaser.Scene {
     
     // 점수만 업데이트 (콤보는 서버에서 관리)
     this.updateScore('miss');
-    this.playEffectSound('miss');
+    // this.playEffectSound('miss');
     
     console.log(`자신의 노트 miss: ${noteBlock.sessionType} - 레인 ${noteBlock.lane}`);
   }
@@ -900,8 +886,8 @@ export default class JamScene extends Phaser.Scene {
 
     // 다른 플레이어의 miss 정보 수신
     socket.on('player_miss', (data) => {
-      console.log(`player_miss 이벤트 수신:`, data);
-      console.log(`내 악기: ${this.myInstrumentName}, 수신된 악기: ${data.instrument}`);
+      // console.log(`player_miss 이벤트 수신:`, data);
+      // console.log(`내 악기: ${this.myInstrumentName}, 수신된 악기: ${data.instrument}`);
       
       // 내 악기가 아닌 경우에만 처리
       if (data.instrument !== this.myInstrumentName) {
@@ -1164,6 +1150,22 @@ export default class JamScene extends Phaser.Scene {
       socket.off('player_accuracy');
       socket.off('player_miss');
       socket.off('global_combo_update');
+      
+      // 오디오 정리
+      if (this.bgMusic) {
+        this.bgMusic.pause();
+        this.bgMusic.currentTime = 0;
+      }
+      if (this.successSound) {
+        this.successSound.pause();
+        this.successSound.currentTime = 0;
+      }
+      if (this.failSound) {
+        this.failSound.pause();
+        this.failSound.currentTime = 0;
+      }
+      
+
       
       // JudgmentManager 리셋
       this.judgmentManager.reset();
