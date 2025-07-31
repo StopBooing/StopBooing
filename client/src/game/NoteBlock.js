@@ -5,7 +5,7 @@ export default class NoteBlock {
     this.lane = data.lane;
     this.key = data.key;
     this.blockType = 'tap'; // 항상 탭 노트
-    this.sessionType = data.sessionType || 'piano'; // 세션 타입 추가
+    this.sessionType = data.sessionType || 'keyboard'; // 세션 타입 추가
     
     // 시각적 속성
     this.visualObject = null;

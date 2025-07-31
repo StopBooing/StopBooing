@@ -138,8 +138,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('ready', () => {
-    io.emit('game_start', users);
-    console.log('게임 시작!');
+    // 모든 플레이어가 악기를 선택했는지 확인
+    const playersWithInstruments = users.filter(user => user.instrument);
+    const totalPlayers = users.length;
+    const playersWithInstrumentsCount = playersWithInstruments.length;
+    
+    console.log(`게임 시작 시도: ${playersWithInstrumentsCount}/${totalPlayers} 플레이어가 악기를 선택함`);
+    
+    // 최소 2명 이상이고, 모든 플레이어가 악기를 선택했을 때만 게임 시작
+    if (totalPlayers >= 2 && playersWithInstrumentsCount === totalPlayers) {
+      io.emit('game_start', {
+        users: users
+      });
+      console.log('게임 시작! 모든 플레이어가 준비됨');
+    } else {
+      // 조건이 충족되지 않으면 시작 시도한 플레이어에게 알림
+      socket.emit('game_start_failed', {
+        message: `게임을 시작하려면 최소 2명 이상의 플레이어가 모두 악기를 선택해야 합니다. (현재: ${playersWithInstrumentsCount}/${totalPlayers})`
+      });
+      console.log('게임 시작 실패: 조건 미충족');
+    }
   });
 
   socket.on('vote_song', (songId) => {
@@ -166,7 +184,34 @@ io.on('connection', (socket) => {
     io.emit('HITfromSERVER_DRUM', type);
     io.emit('HITfromSERVER_GUITAR', type);
     io.emit('HITfromSERVER_VOCAL', type);
-    io.emit('HITfromSERVER_PIANO', type);
+    io.emit('HITfromSERVER_KEYBOARD', type);
+  });
+
+  // 정확도 동기화 이벤트
+  socket.on('note_accuracy', (data) => {
+    console.log(`정확도 브로드캐스트: ${data.instrument} - ${data.accuracy}`);
+    
+    // 모든 클라이언트에게 해당 악기의 정확도 브로드캐스트
+    io.emit('player_accuracy', {
+      instrument: data.instrument,
+      lane: data.lane,
+      accuracy: data.accuracy,
+      serverTime: data.serverTime,
+      playerId: socket.id
+    });
+  });
+
+  // Miss 동기화 이벤트
+  socket.on('note_miss', (data) => {
+    console.log(`Miss 브로드캐스트: ${data.instrument} - 레인 ${data.lane}`);
+    
+    // 모든 클라이언트에게 해당 악기의 miss 정보 브로드캐스트
+    io.emit('player_miss', {
+      instrument: data.instrument,
+      lane: data.lane,
+      serverTime: data.serverTime,
+      playerId: socket.id
+    });
   });
 
   socket.on('ACCURACYfromCLIENT',(data)=>{

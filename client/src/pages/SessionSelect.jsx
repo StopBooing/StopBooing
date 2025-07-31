@@ -67,6 +67,7 @@ export default function SessionSelect({ setSession }) {
   const [selectedSession, setSelectedSession] = useState('');
   const [selectedInstruments, setSelectedInstruments] = useState({});
   const [myPlayerId, setMyPlayerId] = useState(null);
+  const [isStarting, setIsStarting] = useState(false);
   const navigate = useNavigate();
 
   // 소켓 이벤트 핸들러들을 useCallback으로 메모이제이션
@@ -85,6 +86,19 @@ export default function SessionSelect({ setSession }) {
     alert(`죄송합니다. ${instrument}는 이미 다른 플레이어가 선택했습니다.`);
   }, []);
 
+  const handleGameStart = useCallback((data) => {
+    console.log('게임 시작 이벤트 수신:', data);
+    setIsStarting(false);
+    setSession(selectedSession);
+    navigate(`/game`);
+  }, [selectedSession, setSession, navigate]);
+
+  const handleGameStartFailed = useCallback((data) => {
+    console.log('게임 시작 실패:', data.message);
+    setIsStarting(false);
+    alert(data.message);
+  }, []);
+
   useEffect(() => {
     console.log('SessionSelect useEffect 실행, socket.id:', socket.id);
     setMyPlayerId(socket.id);
@@ -92,13 +106,17 @@ export default function SessionSelect({ setSession }) {
     socket.on('instrument_selected', handleInstrumentSelected);
     socket.on('instrument_deselected', handleInstrumentDeselected);
     socket.on('instrument_already_taken', handleInstrumentAlreadyTaken);
+    socket.on('game_start', handleGameStart);
+    socket.on('game_start_failed', handleGameStartFailed);
 
     return () => {
       socket.off('instrument_selected', handleInstrumentSelected);
       socket.off('instrument_deselected', handleInstrumentDeselected);
       socket.off('instrument_already_taken', handleInstrumentAlreadyTaken);
+      socket.off('game_start', handleGameStart);
+      socket.off('game_start_failed', handleGameStartFailed);
     };
-  }, [handleInstrumentSelected, handleInstrumentDeselected, handleInstrumentAlreadyTaken]);
+  }, [handleInstrumentSelected, handleInstrumentDeselected, handleInstrumentAlreadyTaken, handleGameStart, handleGameStartFailed]);
 
   // 악기 선택/해제 핸들러를 useCallback으로 메모이제이션
   const handleSessionSelect = useCallback((session) => {
@@ -119,9 +137,12 @@ export default function SessionSelect({ setSession }) {
 
   const handleNext = useCallback(() => {
     if (!selectedSession) return;
-    setSession(selectedSession);
-    navigate(`/game`);
-  }, [selectedSession, setSession, navigate]);
+    
+    setIsStarting(true);
+    // 서버에 게임 시작 요청
+    socket.emit('ready');
+    console.log('게임 시작 요청 전송');
+  }, [selectedSession]);
 
   // 악기 상태 계산을 useMemo로 메모이제이션
   const instrumentStates = useMemo(() => {
@@ -353,45 +374,53 @@ export default function SessionSelect({ setSession }) {
         {/* 시작 버튼 */}
         <button
           onClick={handleNext}
-          disabled={!selectedSession}
+          disabled={!selectedSession || isStarting}
           style={{
             fontSize: 20,
             fontWeight: 600,
             padding: '16px 48px',
             borderRadius: 24,
             border: '2px solid #007bff',
-            background: selectedSession ? '#007bff' : '#e9ecef',
-            color: selectedSession ? '#ffffff' : '#6c757d',
-            boxShadow: selectedSession ? '0 4px 16px rgba(0,123,255,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-            cursor: selectedSession ? 'pointer' : 'not-allowed',
+            background: selectedSession && !isStarting ? '#007bff' : '#e9ecef',
+            color: selectedSession && !isStarting ? '#ffffff' : '#6c757d',
+            boxShadow: selectedSession && !isStarting ? '0 4px 16px rgba(0,123,255,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+            cursor: selectedSession && !isStarting ? 'pointer' : 'not-allowed',
             transition: 'all 0.2s ease',
             fontFamily: "'Noto Serif KR', 'serif'",
-            outline: 'none'
+            outline: 'none',
+            position: 'relative'
           }}
           onMouseDown={e => {
-            if (selectedSession) {
+            if (selectedSession && !isStarting) {
               e.currentTarget.style.transform = 'scale(0.97)';
             }
           }}
           onMouseUp={e => {
-            if (selectedSession) {
+            if (selectedSession && !isStarting) {
               e.currentTarget.style.transform = 'scale(1)';
             }
           }}
           onMouseEnter={e => {
-            if (selectedSession) {
+            if (selectedSession && !isStarting) {
               e.currentTarget.style.background = '#0056b3';
               e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,123,255,0.4)';
             }
           }}
           onMouseLeave={e => {
-            if (selectedSession) {
+            if (selectedSession && !isStarting) {
               e.currentTarget.style.background = '#007bff';
               e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,123,255,0.3)';
             }
           }}
         >
-          게임 시작
+          {isStarting ? (
+            <>
+              <span style={{ marginRight: 8 }}>⏳</span>
+              게임 시작 대기 중...
+            </>
+          ) : (
+            '게임 시작'
+          )}
         </button>
 
         {/* 하단 안내 텍스트 */}

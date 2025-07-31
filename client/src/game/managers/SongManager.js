@@ -4,7 +4,7 @@ export default class SongManager {
   constructor() {
     // 악기 이름 매핑
     this.instrumentMapping = {
-      keyboard: 'piano',
+      keyboard: 'keyboard',
       guitar: 'guitar',
       drum: 'drum',
       vocal: 'vocal'
@@ -17,7 +17,7 @@ export default class SongManager {
   // 세션별 곡 데이터 가져오기
   getSongData(instrumentName, songId = null) {
     const song = songId || this.currentSong;
-    const sessionType = this.instrumentMapping[instrumentName] || 'piano';
+    const sessionType = this.instrumentMapping[instrumentName] || 'keyboard';
     
     return UnifiedSongData.createSongData(sessionType, song);
   }

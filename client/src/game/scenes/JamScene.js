@@ -43,6 +43,9 @@ export default class JamScene extends Phaser.Scene {
     this.audioInitialized = false;
     this.countdownTimer = null;
     
+    // 게임 시작 시간 관련 변수
+    this.gameStartTime = null;
+    
     if (!window.jamSceneCountdownStarted) {
       window.jamSceneCountdownStarted = false;
     }
@@ -51,6 +54,10 @@ export default class JamScene extends Phaser.Scene {
   init() {
     this.myInstrumentName = this.sys.game.registry.get('myInstrument');
     console.log(`JamScene: 나의 역할은 [${this.myInstrumentName}] 입니다.`);
+    
+    // JamScene 진입 시점을 게임 시작 시간으로 설정
+    this.gameStartTime = performance.now();
+    console.log('JamScene 진입 - 게임 시작 시간 설정:', this.gameStartTime);
   }
 
   create() {
@@ -66,7 +73,15 @@ export default class JamScene extends Phaser.Scene {
     
     // SongManager를 통해 곡 데이터 로드하고 NoteBlock 인스턴스로 변환
     const noteData = this.songManager.getSongData(this.myInstrumentName);
+    console.log('로드된 노트 데이터:', noteData);
+    
+    // 모든 노트를 표시하되, 자신의 노트만 칠 수 있도록 함
     this.noteBlocks = noteData.map(data => new NoteBlock(data));
+    
+    console.log(`총 노트 개수: ${this.noteBlocks.length}`);
+    this.noteBlocks.forEach((note, index) => {
+      console.log(`노트 ${index}: ${note.toString()}, 세션: ${note.sessionType}`);
+    });
     
     // noteSpeed 계산은 previewTimeSec과 HIT_LINE_Y에 의존
     const travelDistance = this.HIT_LINE_Y - this.SPAWN_Y;
@@ -99,6 +114,9 @@ export default class JamScene extends Phaser.Scene {
     
     this.createSessionUI();
     this.setupKeyboardInput();
+    
+    // 다른 플레이어의 정확도 수신 이벤트 리스너
+    this.setupAccuracySync();
   }
 
   initAudio() {
@@ -125,7 +143,8 @@ export default class JamScene extends Phaser.Scene {
       'keyboard': '키보드',
       'drum': '드럼', 
       'guitar': '일렉기타',
-      'vocal': '보컬'
+      'vocal': '보컬',
+
     };
 
     const displayName = sessionNames[this.sessionType] || this.sessionType;
@@ -145,7 +164,7 @@ export default class JamScene extends Phaser.Scene {
     }).setOrigin(0.5);
     
     // 협동 게임 안내
-    this.coopText = this.add.text(400, 120, `Hit only ${this.sessionType} notes!`, {
+    this.coopText = this.add.text(400, 120, `Hit only ${this.sessionType} notes! (Other notes are dimmed)`, {
       fontSize: '16px',
       color: '#ffff00',
       backgroundColor: '#000',
@@ -223,11 +242,6 @@ export default class JamScene extends Phaser.Scene {
   }
 
   startSongTracker() {
-    // 게임 시작 시간 기록 (한 번만 설정)
-    if (!this.gameStartTime) {
-      this.gameStartTime = performance.now();
-      console.log('게임 시작 시간 설정:', this.gameStartTime);
-    }
     this.currentBar = 0;
 
     // BPM 설정 (120 BPM = 0.5초/박)
@@ -243,7 +257,7 @@ export default class JamScene extends Phaser.Scene {
     this.startBackgroundMusic();
 
     // NoteBlock들을 타이밍에 따라 스케줄링합니다.
-    // console.log(`Starting song tracker with ${this.noteBlocks.length} notes`);
+    console.log(`Starting song tracker with ${this.noteBlocks.length} notes`);
     this.noteBlocks.forEach((noteBlock, index) => {
       const hitTime = noteBlock.timing; // NoteBlock의 timing 속성 사용
       const spawnTime = hitTime - this.previewTimeSec;
@@ -251,27 +265,29 @@ export default class JamScene extends Phaser.Scene {
       const now = this.getCurrentTime();
       const delaySec = spawnTime - now;
 
-      // console.log(`Note ${index}: key=${noteBlock.key}, lane=${noteBlock.lane}, timing=${noteBlock.timing}, spawnTime=${spawnTime}, delaySec=${delaySec}`);
+      console.log(`Note ${index}: key=${noteBlock.key}, lane=${noteBlock.lane}, timing=${noteBlock.timing}, spawnTime=${spawnTime}, delaySec=${delaySec}`);
 
       const spawnNote = () => {
         // 이미 스폰된 노트는 다시 스폰하지 않음
         if (noteBlock.visualObject) {
-          // console.log(`Note already spawned: ${noteBlock.toString()}`);
+          console.log(`Note already spawned: ${noteBlock.toString()}`);
           return;
         }
         
         // 디버깅: NoteBlock 정보 확인
-        // console.log(`Spawning note: key=${noteBlock.key}, lane=${noteBlock.lane}, yPos=${this.keyLanes[noteBlock.key]}`);
+        console.log(`Spawning note: key=${noteBlock.key}, lane=${noteBlock.lane}, yPos=${this.keyLanes[noteBlock.key]}`);
         
         const visualObject = this.spawnNoteVisual(noteBlock);
         noteBlock.visualObject = visualObject;
         this.scheduledNotes.push(noteBlock);
-        // console.log(`Note spawned and added to scheduledNotes. Total: ${this.scheduledNotes.length}`);
+        console.log(`Note spawned and added to scheduledNotes. Total: ${this.scheduledNotes.length}`);
       };
 
       if (delaySec <= 0) {
+        console.log(`Note ${index} spawning immediately (delaySec <= 0)`);
         spawnNote();
       } else {
+        console.log(`Note ${index} scheduled to spawn in ${delaySec} seconds`);
         this.time.delayedCall(delaySec * 1000, spawnNote, [], this);
       }
     });
@@ -342,6 +358,9 @@ export default class JamScene extends Phaser.Scene {
     if (!this.keyLanes[noteBlock.key]) {
       console.warn(`Key '${noteBlock.key}' not found in keyLanes:`, this.keyLanes);
     }
+    
+    console.log(`Spawning visual for note: key=${noteBlock.key}, xPos=${xPos}, SPAWN_Y=${this.SPAWN_Y}`);
+    
     const gameWidth = this.RHYTHM_GAME_RIGHT - this.RHYTHM_GAME_LEFT;
     const laneSpacing = gameWidth / GAME_CONFIG.LANE_COUNT;
     const baseWidth = laneSpacing * GAME_CONFIG.NOTE.WIDTH_RATIO;
@@ -350,12 +369,23 @@ export default class JamScene extends Phaser.Scene {
     
     // 탭 노트만 사용
     blockHeight = GAME_CONFIG.NOTE.TAP_HEIGHT;
-    const tapColor = SESSION_COLORS[noteBlock.sessionType]?.TAP || SESSION_COLORS.piano.TAP;
+    
+    // 자신의 노트인지 확인하여 색상과 투명도 조정
+    const isMyNote = noteBlock.sessionType === this.myInstrumentName;
+    const tapColor = SESSION_COLORS[noteBlock.sessionType]?.TAP || SESSION_COLORS.keyboard.TAP;
+    
     visualBlock = this.add.rectangle(0, 0, baseWidth, blockHeight, tapColor).setOrigin(0.5, 0);
+    
+    // 자신의 노트가 아니면 투명도를 낮춰서 구분
+    if (!isMyNote) {
+      visualBlock.setAlpha(0.3);
+    }
     
     noteBlock.blockHeight = blockHeight;
     const container = this.add.container(xPos, this.SPAWN_Y, [visualBlock]);
     this.noteVisualsGroup.add(container);
+    
+    console.log(`Visual note created: x=${xPos}, y=${this.SPAWN_Y}, width=${baseWidth}, height=${blockHeight}, color=${tapColor}, isMyNote=${isMyNote}`);
     return container;
   }
 
@@ -437,6 +467,15 @@ export default class JamScene extends Phaser.Scene {
       if (hitNoteBlock) {
         // 탭 노트 히트 처리
         hitNoteBlock.hit(now);
+        
+        // 서버에 정확도 전송 (다른 플레이어들에게 브로드캐스트용)
+        socket.emit('note_accuracy', {
+          instrument: this.myInstrumentName,
+          lane: hitNoteBlock.lane,
+          accuracy: hitNoteBlock.accuracy,
+          serverTime: now
+        });
+        
         this.updateComboAndScore(hitNoteBlock.accuracy);
         this.showAccuracyText(hitNoteBlock.accuracy, hitNoteBlock.lane, hitNoteBlock);
         
@@ -445,28 +484,8 @@ export default class JamScene extends Phaser.Scene {
         
         // console.log(`Tap Block HIT: lane ${hitNoteBlock.lane}, Acc: ${hitNoteBlock.accuracy}`);
       } else {
-        // 잘못된 세션 노트를 칠려고 시도한 경우 miss 처리
-        const wrongSessionNote = this.scheduledNotes.find(noteBlock => {
-          if (noteBlock.key !== keyId) return false;
-          if (noteBlock.isHit) return false;
-          
-          // 자신의 세션이 아닌 노트를 찾음
-          if (noteBlock.sessionType === this.sessionType) return false;
-          
-          const timeDiff = Math.abs(now - noteBlock.timing);
-          return timeDiff <= GAME_CONFIG.JUDGMENT_WINDOWS.MISS;
-        });
-        
-        if (wrongSessionNote) {
-          // 잘못된 세션 노트를 칠려고 시도함 - miss 처리
-          console.warn(`Wrong session note attempted: ${this.sessionType} player tried to hit ${wrongSessionNote.sessionType} note`);
-          this.updateComboAndScore('miss');
-          this.showAccuracyText('miss', wrongSessionNote.lane, wrongSessionNote);
-          this.playEffectSound('miss');
-        } else {
-          // 히트할 노트 블록이 없는 경우
-          console.warn(`No NoteBlock found for key '${keyId}' at this time.`);
-        }
+        // 자신의 노트가 아닌 경우 아무것도 하지 않음 (다른 플레이어의 정확도는 서버에서 받음)
+        console.log(`No NoteBlock found for key '${keyId}' at this time.`);
       }
     });
 
@@ -491,14 +510,17 @@ export default class JamScene extends Phaser.Scene {
 
   // NoteBlock에서 히트할 노트 찾기
   findNoteBlockToHit(keyId, currentTime) {
-    return this.scheduledNotes.find(noteBlock => {
+    const foundNote = this.scheduledNotes.find(noteBlock => {
       if (noteBlock.key !== keyId) return false;
       
       // 이미 히트한 노트는 제외
       if (noteBlock.isHit) return false;
       
       // 세션별 노트 히트 검증 (자신의 세션 타입 노트만 칠 수 있음)
-      if (noteBlock.sessionType !== this.sessionType) return false;
+      if (noteBlock.sessionType !== this.sessionType) {
+        console.log(`다른 세션 노트 무시: ${noteBlock.sessionType} (내 세션: ${this.sessionType})`);
+        return false;
+      }
       
       // 탭 노트 히트 윈도우
       const hitWindow = GAME_CONFIG.JUDGMENT_WINDOWS.MISS;
@@ -506,16 +528,26 @@ export default class JamScene extends Phaser.Scene {
       const timeDiff = Math.abs(currentTime - noteBlock.timing);
       return timeDiff <= hitWindow;
     });
+    
+    if (foundNote) {
+      console.log(`자신의 노트 찾음: ${foundNote.sessionType} - 레인 ${foundNote.lane}`);
+    }
+    
+    return foundNote;
   }
 
   // 정확도를 화면에 표시하는 메서드
-  showAccuracyText(accuracy, lane, noteBlock = null) {
+  showAccuracyText(accuracy, lane, noteBlock = null, customX = null, isOtherPlayer = false) {
     // console.log(`showAccuracyText called: accuracy=${accuracy}, lane=${lane}`);
     
     const color = this.judgmentManager.getJudgmentColor(accuracy);
     
     let x, y;
-    if (noteBlock && noteBlock.visualObject) {
+    if (customX) {
+      // 다른 플레이어의 정확도 표시용
+      x = customX;
+      y = this.HIT_LINE_Y - 50;
+    } else if (noteBlock && noteBlock.visualObject) {
       // 노트 컨테이너의 현재 위치 바로 위에 표시
       x = noteBlock.visualObject.x;
       y = noteBlock.visualObject.y - 30;
@@ -529,11 +561,12 @@ export default class JamScene extends Phaser.Scene {
     
     // 정확도 텍스트 생성
     const accuracyText = this.add.text(x, y, accuracy.toUpperCase(), {
-      fontSize: ANIMATION_CONFIG.ACCURACY_TEXT.FONT_SIZE,
+      fontSize: isOtherPlayer ? ANIMATION_CONFIG.ACCURACY_TEXT.FONT_SIZE * 0.8 : ANIMATION_CONFIG.ACCURACY_TEXT.FONT_SIZE,
       color: color,
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: ANIMATION_CONFIG.ACCURACY_TEXT.STROKE_THICKNESS
+      strokeThickness: ANIMATION_CONFIG.ACCURACY_TEXT.STROKE_THICKNESS,
+      alpha: isOtherPlayer ? 0.7 : 1.0 // 다른 플레이어는 약간 투명하게
     }).setOrigin(0.5);
     
     // console.log(`showAccuracyText - text created at x: ${x}, y: ${y}`);
@@ -628,12 +661,25 @@ export default class JamScene extends Phaser.Scene {
   handleMissedNote(noteBlock, currentTime) {
     if (noteBlock.isHit) return; // 이미 히트한 노트는 처리하지 않음
     
+    // 자신의 노트만 miss 처리
+    if (noteBlock.sessionType !== this.sessionType) {
+      console.log(`다른 세션 노트 miss 무시: ${noteBlock.sessionType} (내 세션: ${this.sessionType})`);
+      return;
+    }
+    
     // 이전 콤보 저장
     const previousCombo = this.judgmentManager.currentCombo;
     
     // MISS 처리
     noteBlock.hit(currentTime);
     noteBlock.accuracy = 'miss';
+    
+    // 서버에 miss 정보 전송 (다른 플레이어들에게 브로드캐스트용)
+    socket.emit('note_miss', {
+      instrument: this.myInstrumentName,
+      lane: noteBlock.lane,
+      serverTime: currentTime
+    });
     
     // MISS 텍스트 표시
     this.showAccuracyText('miss', noteBlock.lane, noteBlock);
@@ -648,7 +694,7 @@ export default class JamScene extends Phaser.Scene {
       // console.log(`Combo broken! Previous combo: ${previousCombo}`);
     }
     
-    // console.log(`Note missed: lane ${noteBlock.lane}, timing ${noteBlock.timing}`);
+    console.log(`자신의 노트 miss: ${noteBlock.sessionType} - 레인 ${noteBlock.lane}`);
   }
 
   // 콤보 및 점수 업데이트 메서드
@@ -669,6 +715,114 @@ export default class JamScene extends Phaser.Scene {
     this.game.events.emit('comboUpdate', result.combo);
     
     // console.log(`Score updated: +${result.score} (Total: ${result.totalScore}), Combo: ${result.combo}, Accuracy: ${result.accuracy}%`);
+  }
+
+  // 다른 플레이어의 정확도 동기화 설정
+  setupAccuracySync() {
+    socket.on('player_accuracy', (data) => {
+      console.log(`player_accuracy 이벤트 수신:`, data);
+      console.log(`내 악기: ${this.myInstrumentName}, 수신된 악기: ${data.instrument}`);
+      
+      // 내 악기가 아닌 경우에만 처리
+      if (data.instrument !== this.myInstrumentName) {
+        console.log(`다른 플레이어 정확도 수신: ${data.instrument} - ${data.accuracy}`);
+        this.showOtherPlayerAccuracy(data);
+      } else {
+        console.log(`내 정확도는 무시 (이미 처리됨)`);
+      }
+    });
+
+    // 다른 플레이어의 miss 정보 수신
+    socket.on('player_miss', (data) => {
+      console.log(`player_miss 이벤트 수신:`, data);
+      console.log(`내 악기: ${this.myInstrumentName}, 수신된 악기: ${data.instrument}`);
+      
+      // 내 악기가 아닌 경우에만 처리
+      if (data.instrument !== this.myInstrumentName) {
+        console.log(`다른 플레이어 miss 수신: ${data.instrument} - 레인 ${data.lane}`);
+        this.showOtherPlayerMiss(data);
+      } else {
+        console.log(`내 miss는 무시 (이미 처리됨)`);
+      }
+    });
+  }
+
+  // 다른 플레이어의 정확도를 표시하는 메서드
+  showOtherPlayerAccuracy(data) {
+    console.log(`showOtherPlayerAccuracy 호출: instrument=${data.instrument}, lane=${data.lane}, accuracy=${data.accuracy}`);
+    
+    // 실제 노트의 레인 정보를 직접 사용하여 X 위치 계산
+    const laneX = this.getLaneXFromLaneNumber(data.lane);
+    console.log(`계산된 laneX: ${laneX}`);
+    
+    if (laneX) {
+      this.showAccuracyText(data.accuracy, data.lane, null, laneX, true);
+    } else {
+      console.warn(`laneX를 찾을 수 없음: lane=${data.lane}`);
+      // fallback: 화면 중앙에 표시
+      this.showAccuracyText(data.accuracy, data.lane, null, this.cameras.main.width / 2, true);
+    }
+  }
+
+  // 다른 플레이어의 miss를 표시하는 메서드
+  showOtherPlayerMiss(data) {
+    console.log(`showOtherPlayerMiss 호출: instrument=${data.instrument}, lane=${data.lane}`);
+    
+    // 실제 노트의 레인 정보를 직접 사용하여 X 위치 계산
+    const laneX = this.getLaneXFromLaneNumber(data.lane);
+    console.log(`계산된 laneX: ${laneX}`);
+    
+    if (laneX) {
+      this.showAccuracyText('miss', data.lane, null, laneX, true);
+    } else {
+      console.warn(`laneX를 찾을 수 없음: lane=${data.lane}`);
+      // fallback: 화면 중앙에 표시
+      this.showAccuracyText('miss', data.lane, null, this.cameras.main.width / 2, true);
+    }
+  }
+
+  // 레인 번호로 X 위치 가져오기 (실제 노트 레인 정보 사용)
+  getLaneXFromLaneNumber(lane) {
+    console.log(`getLaneXFromLaneNumber 호출: lane=${lane}`);
+    
+    if (lane >= 1 && lane <= 8) {
+      const laneX = this[`lane${lane}X`];
+      console.log(`lane${lane}X: ${laneX}`);
+      return laneX;
+    }
+    
+    console.warn(`유효하지 않은 레인 번호: ${lane}`);
+    return null;
+  }
+
+  // 악기별 레인 X 위치 가져오기 (기존 메서드 - 하위 호환성)
+  getLaneXForInstrument(instrument, lane) {
+    console.log(`getLaneXForInstrument 호출: instrument=${instrument}, lane=${lane}`);
+    
+    // 악기별로 다른 레인 영역을 사용하도록 매핑
+    const instrumentLaneMapping = {
+      'vocal': 1,      // 보컬: 1-2번 레인
+      'keyboard': 3,   // 키보드: 3-4번 레인
+      'drum': 5,       // 드럼: 5-6번 레인
+      'guitar': 7      // 기타: 7-8번 레인
+    };
+    
+    const baseLane = instrumentLaneMapping[instrument];
+    console.log(`baseLane: ${baseLane}`);
+    
+    if (baseLane && lane >= 1 && lane <= 8) { // 모든 레인 범위 지원
+      const targetLane = baseLane + lane - 1;
+      console.log(`targetLane: ${targetLane}`);
+      
+      if (targetLane >= 1 && targetLane <= 8) {
+        const laneX = this[`lane${targetLane}X`];
+        console.log(`lane${targetLane}X: ${laneX}`);
+        return laneX;
+      }
+    }
+    
+    console.warn(`유효하지 않은 레인: instrument=${instrument}, lane=${lane}`);
+    return null;
   }
 
   // 정확도 업데이트 메서드 (JudgmentManager로 이동됨)
@@ -827,6 +981,10 @@ export default class JamScene extends Phaser.Scene {
         this.input.keyboard.off('keydown');
         this.input.keyboard.off('keyup');
       }
+      
+      // 소켓 이벤트 리스너 정리
+      socket.off('player_accuracy');
+      socket.off('player_miss');
       
       // JudgmentManager 리셋
       this.judgmentManager.reset();

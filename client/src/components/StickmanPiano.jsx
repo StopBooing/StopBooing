@@ -62,8 +62,8 @@ export default function StickmanVocal({width, height}) {
       }
     };
     
-    socket.off('HITfromSERVER_PIANO');
-    socket.on('HITfromSERVER_PIANO', handleHitFromServer);
+    socket.off('HITfromSERVER_KEYBOARD');
+    socket.on('HITfromSERVER_KEYBOARD', handleHitFromServer);
     
     socket.off('ACCURACYfromSERVER');
     socket.on('ACCURACYfromSERVER',(data)=>{
@@ -71,7 +71,7 @@ export default function StickmanVocal({width, height}) {
     });
     
     return () => {
-      socket.off('HITfromSERVER_PIANO', handleHitFromServer);
+      socket.off('HITfromSERVER_KEYBOARD', handleHitFromServer);
       socket.off('ACCURACYfromSERVER');
     };
   },[leftHitTrigger,rightHitTrigger,doubleHitTrigger,annoyingTrigger]);

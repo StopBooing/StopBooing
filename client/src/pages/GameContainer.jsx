@@ -193,25 +193,25 @@ export default function GameContainer({ nickname, song, session }) {
       </div>
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '90vh'}}>  
         {/* 왼쪽 영역 */}
-        <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
+        {/* <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
           <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" position={{x: 0, y: 20}}>
             <StickmanDrum width={200} height={200} />
           </CylinderWrapper>
           <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" position={{x: 30, y: 10}}>
             <StickmanGuitar width={200} height={200} />
           </CylinderWrapper>
-        </div>
+        </div> */}
         {/* 중앙 연주 영역 */}
         <div ref={phaserRef} style={{ width: '40vw', height: '90vh', overflow: 'hidden', background: 'transparent',alignContent: 'center' }} />
         {/* 오른쪽 영역 */}
-        <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
+        {/* <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
           <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal">
             <StickmanVocal width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" position={{x: 0, y: 30}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="keyboard" position={{x: 0, y: 30}}>
             <StickmanPiano width={200} height={200} />
           </CylinderWrapper>
-        </div>
+        </div> */}
       </div>
       
       {/* 콤보 표시 UI */}

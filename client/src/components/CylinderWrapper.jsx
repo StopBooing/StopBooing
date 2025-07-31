@@ -1,9 +1,9 @@
 import React from 'react';
 import { SESSION_COLORS } from '../game/constants/GameConstants.js';
 
-const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'piano' }) => {
+const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'keyboard' }) => {
   // 세션별 대표 색상 가져오기
-  const sessionColor = SESSION_COLORS[sessionType]?.TAP || SESSION_COLORS.piano.TAP;
+  const sessionColor = SESSION_COLORS[sessionType]?.TAP || SESSION_COLORS.keyboard.TAP;
   const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
 
   return (

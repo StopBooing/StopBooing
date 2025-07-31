@@ -31,7 +31,7 @@ export default function App() {
       drum: { accuracy: "95%", perfect: 150 },
       guitar: { accuracy: "92%", perfect: 120 },
       vocal: { accuracy: "88%", perfect: 95 },
-      piano: { accuracy: "96%", perfect: 180 }
+      keyboard: { accuracy: "96%", perfect: 180 }
     },
     onHomeClick: () => window.location.href = '/'
   };

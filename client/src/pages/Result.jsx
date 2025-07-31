@@ -186,7 +186,7 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             </div>
           </div>
 
-          {/* Piano */}
+          {/* Keyboard */}
           <div style={{
             backgroundColor: 'rgba(0,204,0,0.1)',
             border: '2px solid #00cc00',
@@ -200,12 +200,12 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             flexDirection: 'column',
             justifyContent: 'center'
           }}>
-            <h3 style={{ color: '#00cc00', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Piano</h3>
+                          <h3 style={{ color: '#00cc00', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Keyboard</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
-              {sessionResults?.piano?.accuracy || '96%'}
+                              {sessionResults?.keyboard?.accuracy || '96%'}
             </div>
             <div style={{ fontSize: '1.2rem', color: '#ccc' }}>
-              Perfect: {sessionResults?.piano?.perfect || 180}
+                              Perfect: {sessionResults?.keyboard?.perfect || 180}
             </div>
           </div>
         </div>
