@@ -1,6 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const RuleExplanation = ({ onNext }) => {
+  const [showTitle, setShowTitle] = useState(false);
+  const [showRule1, setShowRule1] = useState(false);
+  const [showRule2, setShowRule2] = useState(false);
+  const [showRule3, setShowRule3] = useState(false);
+  const [showRule4, setShowRule4] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+
+  useEffect(() => {
+    // 제목 애니메이션 시작
+    const titleTimer = setTimeout(() => {
+      setShowTitle(true);
+    }, 500);
+
+    // 규칙 1 애니메이션 시작
+    const rule1Timer = setTimeout(() => {
+      setShowRule1(true);
+    }, 1500);
+
+    // 규칙 2 애니메이션 시작
+    const rule2Timer = setTimeout(() => {
+      setShowRule2(true);
+    }, 2500);
+
+    // 규칙 3 애니메이션 시작
+    const rule3Timer = setTimeout(() => {
+      setShowRule3(true);
+    }, 3500);
+
+    // 규칙 4 애니메이션 시작
+    const rule4Timer = setTimeout(() => {
+      setShowRule4(true);
+    }, 4500);
+
+    // 다음 버튼 애니메이션 시작
+    const buttonTimer = setTimeout(() => {
+      setShowButton(true);
+    }, 5500);
+
+    return () => {
+      clearTimeout(titleTimer);
+      clearTimeout(rule1Timer);
+      clearTimeout(rule2Timer);
+      clearTimeout(rule3Timer);
+      clearTimeout(rule4Timer);
+      clearTimeout(buttonTimer);
+    };
+  }, []);
   return (
     <div style={{
       width: '100vw',
@@ -21,7 +68,10 @@ const RuleExplanation = ({ onNext }) => {
         marginBottom: '60px',
         textAlign: 'center',
         textShadow: '0 0 20px rgba(255,255,255,0.3)',
-        letterSpacing: '0.1em'
+        letterSpacing: '0.1em',
+        opacity: showTitle ? 1 : 0,
+        transform: showTitle ? 'translateY(0)' : 'translateY(-30px)',
+        transition: 'all 0.8s cubic-bezier(.4,2,.6,1)'
       }}>
         게임 규칙
       </h1>
@@ -37,7 +87,7 @@ const RuleExplanation = ({ onNext }) => {
           flexDirection: 'column',
           gap: '30px'
         }}>
-          {/* 규칙 1 */}
+          
           <div style={{
             display: 'flex',
             alignItems: 'flex-start',
@@ -45,7 +95,10 @@ const RuleExplanation = ({ onNext }) => {
             padding: '25px',
             backgroundColor: 'rgba(255,255,255,0.05)',
             borderRadius: '15px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            opacity: showRule1 ? 1 : 0,
+            transform: showRule1 ? 'translateX(0)' : 'translateX(-50px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)'
           }}>
             <div style={{
               width: '40px',
@@ -78,7 +131,10 @@ const RuleExplanation = ({ onNext }) => {
             padding: '25px',
             backgroundColor: 'rgba(255,255,255,0.05)',
             borderRadius: '15px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            opacity: showRule2 ? 1 : 0,
+            transform: showRule2 ? 'translateX(0)' : 'translateX(-50px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)'
           }}>
             <div style={{
               width: '40px',
@@ -111,7 +167,10 @@ const RuleExplanation = ({ onNext }) => {
             padding: '25px',
             backgroundColor: 'rgba(255,255,255,0.05)',
             borderRadius: '15px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            opacity: showRule3 ? 1 : 0,
+            transform: showRule3 ? 'translateX(0)' : 'translateX(-50px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)'
           }}>
             <div style={{
               width: '40px',
@@ -144,7 +203,10 @@ const RuleExplanation = ({ onNext }) => {
             padding: '25px',
             backgroundColor: 'rgba(255,255,255,0.05)',
             borderRadius: '15px',
-            border: '1px solid rgba(255,255,255,0.1)'
+            border: '1px solid rgba(255,255,255,0.1)',
+            opacity: showRule4 ? 1 : 0,
+            transform: showRule4 ? 'translateX(0)' : 'translateX(-50px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)'
           }}>
             <div style={{
               width: '40px',
@@ -183,9 +245,11 @@ const RuleExplanation = ({ onNext }) => {
           fontSize: '1.3rem',
           fontWeight: 'bold',
           cursor: 'pointer',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
           boxShadow: '0 4px 15px rgba(74,144,226,0.3)',
-          fontFamily: "'Noto Serif KR', serif"
+          fontFamily: "'Noto Serif KR', serif",
+          opacity: showButton ? 1 : 0,
+          transform: showButton ? 'translateY(0)' : 'translateY(30px)'
         }}
         onMouseOver={(e) => {
           e.target.style.backgroundColor = '#357abd';
