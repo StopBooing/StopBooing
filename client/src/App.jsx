@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 import StartPage from './pages/StartPage';
 import NicknameInput from './pages/NicknameInput';
+import RuleExplanation from './pages/RuleExplanation';
 import SongSelect from './pages/SongSelect';
 import SessionSelect from './pages/SessionSelect';
 import GameContainer from './pages/GameContainer';
@@ -26,7 +27,7 @@ export default function App() {
   // 테스트용 결과 데이터
   const testResultData = {
     songTitle: "Don't look back in anger",
-    totalGrade: "S",
+    totalGrade: "A", // 여기서 등급 변경: "D", "C", "B", "A", "S" 중 선택
     sessionResults: {
       drum: { accuracy: "95%", perfect: 150 },
       guitar: { accuracy: "92%", perfect: 120 },
@@ -40,6 +41,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<StartPage  />} />
+        <Route path="/rules" element={<RuleExplanation onNext={() => window.location.href = '/nickname'} />} />
         <Route path="/nickname" element={<NicknameInput setNickname={setNickname} />} />
         <Route path="/song" element={<SongSelect setSong={setSong} />} />
         <Route path="/session" element={<SessionSelect setSession={setSession} />} />

@@ -15,7 +15,7 @@ const STYLES = {
   container: {
     minHeight: '100vh',
     width: '100vw',
-    background: '#f8f9fa',
+    background: '#0a0a0a',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -25,29 +25,29 @@ const STYLES = {
     overflow: 'hidden'
   },
   mainCard: {
-    background: '#ffffff',
+    background: '#1a1a1a',
     borderRadius: 24,
-    boxShadow: '0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
     padding: '48px 36px 36px 36px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     minWidth: 400,
     maxWidth: 600,
-    border: '1px solid rgba(0,0,0,0.06)',
+    border: '1px solid rgba(255,255,255,0.1)',
     zIndex: 1,
     position: 'relative'
   },
   title: {
-    color: '#212529',
+    color: '#ffffff',
     fontSize: 32,
     fontWeight: 700,
     letterSpacing: 4,
     marginBottom: 32,
-    textShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    textShadow: '0 2px 8px rgba(0,0,0,0.5)'
   },
   description: {
-    color: '#6c757d',
+    color: '#b0b0b0',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 32,
@@ -184,9 +184,9 @@ export default function SessionSelect({ setSession }) {
       return {
         ...baseStyle,
         border: `3px solid ${instrument.color}`,
-        background: `${instrument.color}15`,
+        background: `${instrument.color}20`,
         color: instrument.color,
-        boxShadow: `0 8px 24px ${instrument.color}30`,
+        boxShadow: `0 8px 24px ${instrument.color}40`,
         cursor: 'pointer'
       };
     }
@@ -194,10 +194,10 @@ export default function SessionSelect({ setSession }) {
     if (instrument.isDisabled) {
       return {
         ...baseStyle,
-        border: '2px solid #dee2e6',
-        background: '#f8f9fa',
-        color: '#adb5bd',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        border: '2px solid #333333',
+        background: '#2a2a2a',
+        color: '#666666',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
         cursor: 'not-allowed',
         opacity: 0.6
       };
@@ -205,10 +205,10 @@ export default function SessionSelect({ setSession }) {
 
     return {
       ...baseStyle,
-      border: '2px solid #e9ecef',
-      background: '#ffffff',
-      color: '#6c757d',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+      border: '2px solid #333333',
+      background: '#2a2a2a',
+      color: '#b0b0b0',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
       cursor: 'pointer'
     };
   }, []);
@@ -227,14 +227,16 @@ export default function SessionSelect({ setSession }) {
   const handleButtonMouseEnter = useCallback((e, instrument) => {
     if (!instrument.isDisabled && !instrument.isSelected) {
       e.currentTarget.style.transform = 'translateY(-4px)';
-      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+      e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.4)';
+      e.currentTarget.style.background = '#333333';
     }
   }, []);
 
   const handleButtonMouseLeave = useCallback((e, instrument) => {
     if (!instrument.isDisabled && !instrument.isSelected) {
       e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+      e.currentTarget.style.background = '#2a2a2a';
     }
   }, []);
 
@@ -256,33 +258,6 @@ export default function SessionSelect({ setSession }) {
 
   return (
     <div style={STYLES.container}>
-      {/* 배경 장식 요소들 */}
-      <div style={{
-        position: 'absolute',
-        top: '10%',
-        left: '10%',
-        width: 200,
-        height: 200,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, #e9ecef 0%, #f8f9fa 70%)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-        zIndex: 0,
-        pointerEvents: 'none'
-      }} />
-      
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        right: '15%',
-        width: 150,
-        height: 150,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, #dee2e6 0%, #f8f9fa 60%)',
-        boxShadow: '0 6px 24px rgba(0,0,0,0.08)',
-        zIndex: 0,
-        pointerEvents: 'none'
-      }} />
-
       {/* 메인 컨테이너 */}
       <div style={STYLES.mainCard}>
         {/* 타이틀 */}
@@ -356,7 +331,7 @@ export default function SessionSelect({ setSession }) {
                   width: 20,
                   height: 20,
                   borderRadius: '50%',
-                  background: '#6c757d',
+                  background: '#666666',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -380,11 +355,11 @@ export default function SessionSelect({ setSession }) {
             fontWeight: 600,
             padding: '16px 48px',
             borderRadius: 24,
-            border: '2px solid #007bff',
-            background: selectedSession && !isStarting ? '#007bff' : '#e9ecef',
-            color: selectedSession && !isStarting ? '#ffffff' : '#6c757d',
-            boxShadow: selectedSession && !isStarting ? '0 4px 16px rgba(0,123,255,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-            cursor: selectedSession && !isStarting ? 'pointer' : 'not-allowed',
+            border: selectedSession ? `2px solid ${selectedSession ? INSTRUMENTS.find(i => i.id === selectedSession)?.color || '#007bff' : '#333333'}` : '2px solid #333333',
+            background: selectedSession ? (INSTRUMENTS.find(i => i.id === selectedSession)?.color || '#007bff') : '#2a2a2a',
+            color: selectedSession ? '#ffffff' : '#666666',
+            boxShadow: selectedSession ? `0 4px 16px ${INSTRUMENTS.find(i => i.id === selectedSession)?.color || '#007bff'}40` : '0 2px 8px rgba(0,0,0,0.3)',
+            cursor: selectedSession ? 'pointer' : 'not-allowed',
             transition: 'all 0.2s ease',
             fontFamily: "'Noto Serif KR', 'serif'",
             outline: 'none',
@@ -401,15 +376,17 @@ export default function SessionSelect({ setSession }) {
             }
           }}
           onMouseEnter={e => {
-            if (selectedSession && !isStarting) {
-              e.currentTarget.style.background = '#0056b3';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,123,255,0.4)';
+            if (selectedSession) {
+              const selectedColor = INSTRUMENTS.find(i => i.id === selectedSession)?.color || '#007bff';
+              e.currentTarget.style.background = selectedColor;
+              e.currentTarget.style.boxShadow = `0 6px 20px ${selectedColor}50`;
             }
           }}
           onMouseLeave={e => {
-            if (selectedSession && !isStarting) {
-              e.currentTarget.style.background = '#007bff';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,123,255,0.3)';
+            if (selectedSession) {
+              const selectedColor = INSTRUMENTS.find(i => i.id === selectedSession)?.color || '#007bff';
+              e.currentTarget.style.background = selectedColor;
+              e.currentTarget.style.boxShadow = `0 4px 16px ${selectedColor}40`;
             }
           }}
         >
@@ -425,7 +402,7 @@ export default function SessionSelect({ setSession }) {
 
         {/* 하단 안내 텍스트 */}
         <p style={{
-          color: '#adb5bd',
+          color: '#666666',
           fontSize: 14,
           marginTop: 24,
           textAlign: 'center',
@@ -439,7 +416,7 @@ export default function SessionSelect({ setSession }) {
       <div style={{
         position: 'absolute',
         bottom: 32,
-        color: '#6c757d',
+        color: '#666666',
         fontSize: 16,
         letterSpacing: 2,
         zIndex: 1

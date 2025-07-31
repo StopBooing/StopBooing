@@ -157,8 +157,37 @@ export default function GameContainer({ nickname, song, session }) {
       display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh',
       background: 'linear-gradient(180deg, #18171c 0%, #23222a 100%)', // 어두운 Deemo 스타일
       overflow: 'hidden',
-      fontFamily: "'Noto Serif KR', serif"
+      fontFamily: "'Noto Serif KR', serif",
+      position: 'relative'
     }}>
+      
+      {/* 카운트다운 오버레이 */}
+      {countdown > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            fontSize: '120px',
+            color: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+            fontWeight: 'bold',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
+            userSelect: 'none'
+          }}>
+            {countdown}
+          </div>
+        </div>
+      )}
       {/* 상단 바 */}
       <div style={{
         width: '100vw', height: '10vh', background: 'rgba(24,23,28,0.95)', color: '#f5f5f5',
@@ -269,7 +298,7 @@ export default function GameContainer({ nickname, song, session }) {
           <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" position={{x: 0, y: 20}}>
             <StickmanDrum width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" currentSession={session} position={{x: 30, y: 10}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" currentSession={session} position={{x: 30, y: 10}} countdownComplete={countdownComplete}>
             <StickmanGuitar width={200} height={200} />
           </CylinderWrapper>
         </div>

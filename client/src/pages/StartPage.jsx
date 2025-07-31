@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 export default function StartPage() {
   const navigate = useNavigate();
   const handleStart = () => {
-    navigate('/nickname');
+    navigate('/rules');
   };
   // floating animation keyframes (CSS-in-JS)
   const floatAnim = `@keyframes floatTitle {

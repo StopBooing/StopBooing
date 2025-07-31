@@ -2,9 +2,69 @@ import React from 'react';
 
 const GRADE_LIST = ['D', 'C', 'B', 'A', 'S'];
 
+// 등급별 색상과 멘트 설정
+const GRADE_STYLES = {
+  'D': {
+    color: '#ff4444',
+    textShadow: '0 0 20px #ff4444, 0 0 40px #ff444480',
+    message: '다시 도전해보세요!'
+  },
+  'C': {
+    color: '#00cc44',
+    textShadow: '0 0 20px #00cc44, 0 0 40px #00cc4480',
+    message: '조금만 더 노력하면!'
+  },
+  'B': {
+    color: '#44aaff',
+    textShadow: '0 0 20px #44aaff, 0 0 40px #44aaff80',
+    message: '괜찮은 실력이에요!'
+  },
+  'A': {
+    color: '#ff44ff',
+    textShadow: '0 0 20px #ff44ff, 0 0 40px #ff44ff80',
+    message: '훌륭한 실력이에요!'
+  },
+  'S': {
+    color: '#ffd700',
+    textShadow: '0 0 20px #ffd700, 0 0 40px #ffd70080',
+    message: '완벽한 실력이에요!'
+  }
+};
+
 const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
+  const [showGradeAnimation, setShowGradeAnimation] = React.useState(false);
+  const [showSessionCards, setShowSessionCards] = React.useState(false);
+  const [showHomeButton, setShowHomeButton] = React.useState(false);
+  
   // 현재 등급 인덱스
   const gradeIndex = GRADE_LIST.indexOf(totalGrade || 'S');
+  
+  // 컴포넌트 마운트 후 1초 뒤에 등급 애니메이션 시작
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowGradeAnimation(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // 등급 애니메이션 완료 후 (1.8초 후) 세션 카드 애니메이션 시작
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSessionCards(true);
+    }, 2800); // 1초 + 0.8초(등급 애니메이션 시간)
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // 세션 카드 애니메이션 완료 후 (3.4초 후) 홈 버튼 애니메이션 시작
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHomeButton(true);
+    }, 4000); // 1초 + 0.8초 + 1.2초(세션 카드 애니메이션 시간)
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div style={{
@@ -56,21 +116,22 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
         }}>
           {GRADE_LIST.map((grade, idx) => (
             <div key={grade} style={{
-              fontSize: gradeIndex === idx ? '4rem' : '2.5rem',
-              fontWeight: gradeIndex === idx ? 'bold' : 'normal',
-              color:
-                idx < gradeIndex ? 'rgba(200,200,200,0.3)' :
-                idx === gradeIndex ? '#ffd700' :
+              fontSize: showGradeAnimation && gradeIndex === idx ? '4rem' : '2.5rem',
+              fontWeight: showGradeAnimation && gradeIndex === idx ? 'bold' : 'normal',
+              color: showGradeAnimation ? 
+                (idx < gradeIndex ? 'rgba(200,200,200,0.3)' :
+                 idx === gradeIndex ? GRADE_STYLES[totalGrade || 'S'].color :
+                 'rgba(200,200,200,0.3)') :
                 'rgba(200,200,200,0.3)',
-              opacity: idx === gradeIndex ? 1 : 0.5,
+              opacity: showGradeAnimation && idx === gradeIndex ? 1 : 0.5,
               position: 'relative',
-              transition: 'all 0.3s cubic-bezier(.4,2,.6,1)',
-              textShadow: gradeIndex === idx ? '0 0 20px #ffd700, 0 0 40px #ffd70080' : 'none',
-              transform: gradeIndex === idx ? 'scale(1.2)' : 'scale(1)'
+              transition: 'all 0.8s cubic-bezier(.4,2,.6,1)',
+              textShadow: showGradeAnimation && gradeIndex === idx ? GRADE_STYLES[totalGrade || 'S'].textShadow : 'none',
+              transform: showGradeAnimation && gradeIndex === idx ? 'scale(1.2)' : 'scale(1)'
             }}>
               {grade}
               {/* 강조 효과 */}
-              {gradeIndex === idx && (
+              {showGradeAnimation && gradeIndex === idx && (
                 <div style={{
                   position: 'absolute',
                   left: '50%',
@@ -78,14 +139,14 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
                   transform: 'translate(-50%, 0)',
                   marginTop: '8px',
                   fontSize: '1.1rem',
-                  color: '#ffd700',
+                  color: GRADE_STYLES[totalGrade || 'S'].color,
                   fontWeight: 'bold',
                   letterSpacing: '0.05em',
                   animation: 'bounce 1.2s infinite',
                   whiteSpace: 'nowrap',
-                  textShadow: '0 0 10px #ffd70080'
+                  textShadow: `0 0 10px ${GRADE_STYLES[totalGrade || 'S'].color}80`
                 }}>
-                  여기까지 도달!
+                  {GRADE_STYLES[totalGrade || 'S'].message}
                 </div>
               )}
             </div>
@@ -112,24 +173,28 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
         <div style={{
           display: 'flex',
           flexDirection: 'row',
-          gap: '40px',
-          width: '90%',
-          maxWidth: '1200px',
-          justifyContent: 'center'
+          gap: '20px',
+          width: '95%',
+          maxWidth: '1400px',
+          justifyContent: 'space-between'
         }}>
           {/* Drum */}
           <div style={{
             backgroundColor: 'rgba(204,0,204,0.1)',
             border: '2px solid #cc00cc',
             borderRadius: '10px',
-            padding: '30px 20px',
+            padding: '25px 15px',
             textAlign: 'center',
             flex: 1,
-            minWidth: '200px',
-            height: '300px',
+            minWidth: '180px',
+            height: '280px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            opacity: showSessionCards ? 1 : 0,
+            transform: showSessionCards ? 'translateX(0)' : 'translateX(-100px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
+            transitionDelay: '0s'
           }}>
             <h3 style={{ color: '#cc00cc', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Drum</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -148,14 +213,18 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             backgroundColor: 'rgba(255,102,0,0.1)',
             border: '2px solid #ff6600',
             borderRadius: '10px',
-            padding: '30px 20px',
+            padding: '25px 15px',
             textAlign: 'center',
             flex: 1,
-            minWidth: '200px',
-            height: '300px',
+            minWidth: '180px',
+            height: '280px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            opacity: showSessionCards ? 1 : 0,
+            transform: showSessionCards ? 'translateX(0)' : 'translateX(-100px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
+            transitionDelay: '0.2s'
           }}>
             <h3 style={{ color: '#ff6600', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Guitar</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -174,14 +243,18 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             backgroundColor: 'rgba(255,0,102,0.1)',
             border: '2px solid #ff0066',
             borderRadius: '10px',
-            padding: '30px 20px',
+            padding: '25px 15px',
             textAlign: 'center',
             flex: 1,
-            minWidth: '200px',
-            height: '300px',
+            minWidth: '180px',
+            height: '280px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            opacity: showSessionCards ? 1 : 0,
+            transform: showSessionCards ? 'translateX(0)' : 'translateX(-100px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
+            transitionDelay: '0.4s'
           }}>
             <h3 style={{ color: '#ff0066', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Vocal</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -200,14 +273,18 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             backgroundColor: 'rgba(0,204,0,0.1)',
             border: '2px solid #00cc00',
             borderRadius: '10px',
-            padding: '30px 20px',
+            padding: '25px 15px',
             textAlign: 'center',
             flex: 1,
-            minWidth: '200px',
-            height: '300px',
+            minWidth: '180px',
+            height: '280px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            opacity: showSessionCards ? 1 : 0,
+            transform: showSessionCards ? 'translateX(0)' : 'translateX(-100px)',
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
+            transitionDelay: '0.6s'
           }}>
                           <h3 style={{ color: '#00cc00', margin: '0 0 20px 0', fontSize: '1.5rem' }}>Keyboard</h3>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -242,8 +319,10 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             fontSize: '1.2rem',
             fontWeight: 'bold',
             cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(74,144,226,0.3)'
+            transition: 'all 0.6s cubic-bezier(.4,2,.6,1)',
+            boxShadow: '0 4px 15px rgba(74,144,226,0.3)',
+            opacity: showHomeButton ? 1 : 0,
+            transform: showHomeButton ? 'translateY(0)' : 'translateY(50px)'
           }}
           onMouseOver={(e) => {
             e.target.style.backgroundColor = '#357abd';
