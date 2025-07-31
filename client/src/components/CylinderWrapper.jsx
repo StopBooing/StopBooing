@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SESSION_COLORS } from '../game/constants/GameConstants.js';
+import { NONE } from 'phaser';
 
 const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = false, position = {}, showStage = true, sessionType = 'piano', currentSession = 'piano' }) => {
   const [curtainOpen, setCurtainOpen] = useState(false);
@@ -8,6 +9,10 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
   // 세션별 대표 색상 가져오기
   const sessionColor = SESSION_COLORS[sessionType]?.TAP || SESSION_COLORS.piano.TAP;
   const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
+  
+  // 현재 선택된 세션인지 확인하여 테두리 색상 결정
+  const isCurrentSession = sessionType === currentSession;
+  const borderColor = isCurrentSession ? backgroundColorHex : '#46464c'; // 자기 세션은 색깔, 나머지는 흰색
 
   // 음표 이미지 배열
   const musicImages = ['/assets/music/music1.png', '/assets/music/music2.png', '/assets/music/music3.png'];
@@ -55,6 +60,39 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
   };
 
   const musicNoteArea = getMusicNoteArea(sessionType);
+
+  // 세션별 말풍선 영역 설정 (2개씩)
+  const getSpeechBubbleAreas = (sessionType) => {
+    switch (sessionType) {
+      case 'drum':
+        return [
+          { top: 50, left: 50, width: '30%', height: '15%' },
+          { top: 80, left: 200, width: '25%', height: '12%' }
+        ];
+      case 'guitar':
+        return [
+          { top: 60, left: 20, width: '28%', height: '14%' },
+          { top: 90, left: 180, width: '30%', height: '15%' }
+        ];
+      case 'vocal':
+        return [
+          { top: 40, left: 60, width: '32%', height: '16%' },
+          { top: 70, left: 220, width: '26%', height: '13%' }
+        ];
+      case 'piano':
+        return [
+          { top: 55, left: 40, width: '29%', height: '14%' },
+          { top: 85, left: 210, width: '27%', height: '13%' }
+        ];
+      default:
+        return [
+          { top: 50, left: 50, width: '30%', height: '15%' },
+          { top: 80, left: 200, width: '25%', height: '12%' }
+        ];
+    }
+  };
+
+  const speechBubbleAreas = getSpeechBubbleAreas(sessionType);
 
   // 음표 애니메이션 효과
   useEffect(() => {
@@ -135,7 +173,7 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
         backgroundPosition: 'center',
         padding: '10px',
         zIndex: 1, // 가장 낮은 우선순위
-        boxShadow: `0 0 0 12px ${sessionType === currentSession ? backgroundColorHex : '#46464c'}, inset -6px -6px 12px rgba(0,0,0,0.4), inset 6px 6px 12px rgba(255,255,255,0.2)`, // 조건부 테두리 색상
+        boxShadow: `0 0 0 12px ${borderColor}, inset -6px -6px 12px rgba(0,0,0,0.4), inset 6px 6px 12px rgba(255,255,255,0.2)`, // 더 강한 입체감 효과
         overflow: 'visible' // 스포트라이트 빔이 컨테이너 밖으로 나갈 수 있도록
       }}>
         {/* 음표가 흘러나오는 영역 */}
@@ -148,7 +186,6 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           pointerEvents: 'none',
           zIndex: 100,
           overflow: 'hidden',
-          border: '2px dashed blue',
           borderRadius: '8px'
         }}>
           {musicNotes.map((note) => (
@@ -173,7 +210,37 @@ const CylinderWrapper = ({ children, width = 200, height = 200, showBooth = fals
           ))}
         </div>
         
-
+        {/* 말풍선 생성 영역 1 */}
+        <div style={{
+          position: 'absolute',
+          top: speechBubbleAreas[0].top,
+          left: speechBubbleAreas[0].left,
+          width: speechBubbleAreas[0].width,
+          height: speechBubbleAreas[0].height,
+          pointerEvents: 'none',
+          zIndex: 100,
+          overflow: 'hidden',
+          borderRadius: '8px',
+          border: '2px dashed blue'
+        }}>
+          {/* 말풍선 1 생성 영역 */}
+        </div>
+        
+        {/* 말풍선 생성 영역 2 */}
+        <div style={{
+          position: 'absolute',
+          top: speechBubbleAreas[1].top,
+          left: speechBubbleAreas[1].left,
+          width: speechBubbleAreas[1].width,
+          height: speechBubbleAreas[1].height,
+          pointerEvents: 'none',
+          zIndex: 100,
+          overflow: 'hidden',
+          borderRadius: '8px',
+          border: '2px dashed blue'
+        }}>
+          {/* 말풍선 2 생성 영역 */}
+        </div>
         
         {/* 바닥 조명 효과 */}
         <div style={{
