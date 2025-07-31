@@ -7,6 +7,8 @@ import StickmanGuitar from '../components/StickmanGuitar';
 import StickmanVocal from '../components/StickmanVocal';
 import StickmanPiano from '../components/StickmanPiano';
 import CylinderWrapper from '../components/CylinderWrapper';
+import { SESSION_COLORS } from '../game/constants/GameConstants';
+
 const TOTAL_TIME = 120; // 전체 시간(초)
 
 export default function GameContainer({ nickname, song, session }) {
@@ -14,12 +16,25 @@ export default function GameContainer({ nickname, song, session }) {
   const gameRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(TOTAL_TIME); // 예시: 120초 남음
   const [accuracy, setAccuracy] = useState(100); // 정확도 (100%로 시작)
+  
+  // 각 세션별 정확도 상태
+  const [sessionAccuracies, setSessionAccuracies] = useState({
+    drum: 100,
+    guitar: 100,
+    vocal: 100,
+    piano: 100
+  });
+
+  // 세션별 대표 색상 가져오기
+  const sessionColor = SESSION_COLORS[session]?.TAP || SESSION_COLORS.piano.TAP;
+  const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
 
   // 커튼 애니메이션 상태
   const [curtainOpen, setCurtainOpen] = useState(false);
   const handleCurtainAnimate = () => setCurtainOpen(true);
 
   useEffect(() => {
+    console.log(`컨테이너 크기: ${window.innerWidth * 0.4} x ${window.innerHeight * 0.9}`);
     const config = {
       type: Phaser.AUTO,
       width: window.innerWidth * 0.4, // 40vw에 맞춤
@@ -31,10 +46,14 @@ export default function GameContainer({ nickname, song, session }) {
         arcade: { debug: false },
       },
       backgroundColor: '#18171c', // 어두운 무대 배경
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      }
     };
     const game = new Phaser.Game(config);
     gameRef.current = game;
-    game.registry.set('myInstrument', 'drum');
+    game.registry.set('myInstrument', session);
     
     // 정확도 업데이트를 위한 이벤트 리스너 추가
     const handleAccuracyUpdate = (newAccuracy) => {
@@ -46,7 +65,11 @@ export default function GameContainer({ nickname, song, session }) {
 
     const handleResize = () => {
       if (game && game.scale) {
-        game.scale.resize(window.innerWidth * 0.4, window.innerHeight * 0.9);
+        // 실제 컨테이너 크기에 맞춰서 게임 크기 조정
+        const containerWidth = window.innerWidth * 0.4;
+        const containerHeight = window.innerHeight * 0.9;
+        console.log(`리사이즈: ${containerWidth} x ${containerHeight}`);
+        game.scale.resize(containerWidth, containerHeight);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -62,7 +85,7 @@ export default function GameContainer({ nickname, song, session }) {
       game.events.off('accuracyUpdate', handleAccuracyUpdate);
       game.destroy(true);
     };
-  }, []);
+  }, []); // session과 backgroundColorHex 의존성 제거
 
   // 남은 시간 비율(0~1)
   const percent = Math.max(0, Math.min(1, timeLeft / TOTAL_TIME));
@@ -111,54 +134,127 @@ export default function GameContainer({ nickname, song, session }) {
         boxShadow: '0 2px 16px #000a', borderBottom: '1.5px solid #23222a',
         fontFamily: "'Noto Serif KR', serif"
       }}>
-        {/* 왼쪽: 잔여시간 + 프로그레스 바 */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', width: '70vw'}}>
-          <div style={{ width: '70vw', height: '10px', background: '#23222a', borderRadius: 4, marginTop: 4, overflow: 'hidden', marginRight: 10 }}>
-            <div style={{ width: `${percent * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6e5e4e 0%, #bfae9c 100%)', transition: 'width 0.3s' }} />
+        {/* 왼쪽: 잔여시간 + 프로그레스 바 (비율 7) */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', width: '65%'}}>
+          <div style={{ width: '90%', height: '30px', background: '#23222a', borderRadius: 4, marginTop: 4, overflow: 'hidden', marginRight: 10 }}>
+            <div style={{ width: `${percent * 100}%`, height: '100%', background: `linear-gradient(90deg, ${backgroundColorHex}80 0%, ${backgroundColorHex} 100%)`, transition: 'width 0.3s', borderRadius: 4 }} />
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: '#bfae9c' }}>
+          <div style={{ width: '10%', fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10, color: backgroundColorHex, marginLeft: 20 }}>
             {timeLeft} / {TOTAL_TIME}
           </div>
-
         </div>  
-        {/* 가운데: 정확도 표시 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 40, fontWeight: 'bold', color: '#2196f3' }}>
-            {accuracy.toFixed(1)}%
-          </span>
-        </div>
-        {/* 오른쪽: 홈/설정 */}
-        <div style={{ display: 'flex', gap: 18 }}>
-          <button title="홈" style={{
-            fontSize: 22, background: '#23222a', color: '#bfae9c', border: '1.5px solid #6e5e4e', borderRadius: 16,
-            boxShadow: '0 2px 8px #0006', padding: '6px 18px', fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s', outline: 'none'
-          }}>🏠</button>
-          <button title="설정" style={{
-            fontSize: 22, background: '#23222a', color: '#bfae9c', border: '1.5px solid #6e5e4e', borderRadius: 16,
-            boxShadow: '0 2px 8px #0006', padding: '6px 18px', fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s', outline: 'none'
-          }}>⚙️</button>
+        {/* 가운데: 세션별 정확도 표시 (비율 3) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 50, width: '35%', justifyContent: 'center' }}>
+          {/* DRUM 세션 */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 5,
+            // 조건부 스타일 적용
+                         ...(session === 'drum' && { // 'session'이 'drum'일 때만 아래 스타일 객체가 추가됨
+               padding: '10px 20px',
+               border: '4px solid #cc00cc',
+               borderRadius: '8px',
+               zIndex: 9999,
+               color: '#cc00cc',
+               animation: 'sessionBorderGlow 2s ease-in-out infinite'
+             })
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>DRUM</span>
+            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.drum.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.drum.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.drum.TAP.toString(16) }}>
+              {sessionAccuracies.drum.toFixed(1)}%
+            </span>
+          </div>
+
+          {/* GUITAR 세션 */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 5,
+                         ...(session === 'guitar' && {
+               padding: '10px 20px',
+               border: '4px solid #ff6600',
+               borderRadius: '8px',
+               zIndex: 9999,
+               color: '#ff6600',
+               animation: 'sessionBorderGlow 2s ease-in-out infinite'
+             })
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>GUITAR</span>
+            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.guitar.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.guitar.TAP.toString(16) }}>
+              {sessionAccuracies.guitar.toFixed(1)}%
+            </span>
+          </div>
+
+          {/* VOCAL 세션 */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 5,
+                         ...(session === 'vocal' && {
+               padding: '10px 20px',
+               border: '4px solid #ff0066',
+               borderRadius: '8px',
+               zIndex: 9999,
+               color: '#ff0066',
+               animation: 'sessionBorderGlow 2s ease-in-out infinite'
+             })
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>VOCAL</span>
+            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.vocal.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.vocal.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.vocal.TAP.toString(16) }}>
+              {sessionAccuracies.vocal.toFixed(1)}%
+            </span>
+          </div>
+
+          {/* PIANO 세션 */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: 5,
+                         ...(session === 'keyboard' && {
+               padding: '10px 20px',
+               border: '4px solid #00cc00',
+               borderRadius: '8px',
+               zIndex: 9999,
+               color: '#00cc00',
+               animation: 'sessionBorderGlow 2s ease-in-out infinite'
+             })
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#bfae9c' }}>PIANO</span>
+            <span style={{ fontSize: 25, fontWeight: 'bold', color: SESSION_COLORS.piano.TAP.toString(16).padStart(6, '0').startsWith('0') ? '#' + SESSION_COLORS.piano.TAP.toString(16).padStart(6, '0') : '#' + SESSION_COLORS.piano.TAP.toString(16) }}>
+              {sessionAccuracies.piano.toFixed(1)}%
+            </span>
+          </div>
         </div>
       </div>
       <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100vw', height: '90vh'}}>  
         {/* 왼쪽 영역 */}
         <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" position={{x: 0, y: 20}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="drum" currentSession={session} position={{x: 0, y: 20}}>
             <StickmanDrum width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" position={{x: 30, y: 10}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="guitar" currentSession={session} position={{x: 30, y: 10}}>
             <StickmanGuitar width={200} height={200} />
           </CylinderWrapper>
         </div>
         {/* 중앙 연주 영역 */}
-        <div ref={phaserRef} style={{ width: '40vw', height: '90vh', overflow: 'hidden', background: 'transparent',alignContent: 'center' }} />
+        <div ref={phaserRef} style={{ 
+          width: '40vw', 
+          height: '90vh', 
+          overflow: 'hidden', 
+          // background: `linear-gradient(180deg, #18171c 0%, ${backgroundColorHex}20 50%, ${backgroundColorHex}40 100%)`,
+          alignContent: 'center' 
+        }} />
         {/* 오른쪽 영역 */}
         <div style={{display: 'flex', flexDirection: 'column', width: '30vw', height: '90vh', background: 'transparent',alignItems: 'center',justifyContent: 'center'}}>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal">
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="vocal" currentSession={session}>
             <StickmanVocal width={200} height={200} />
           </CylinderWrapper>
-          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" position={{x: 0, y: 30}}>
+          <CylinderWrapper width={400} height={300} showBooth={false} showStage={true} sessionType="piano" currentSession={session} position={{x: 0, y: 30}}>
             <StickmanPiano width={200} height={200} />
           </CylinderWrapper>
         </div>

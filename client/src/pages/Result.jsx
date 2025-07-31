@@ -135,8 +135,11 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
               {sessionResults?.drum?.accuracy || '95%'}
             </div>
-            <div style={{ fontSize: '1.2rem', color: '#ccc' }}>
-              Perfect: {sessionResults?.drum?.perfect || 150}
+            <div style={{ fontSize: '1rem', color: '#ccc', lineHeight: '1.5' }}>
+              <div>Perfect: {sessionResults?.drum?.perfect || 150}</div>
+              <div>Good: {sessionResults?.drum?.good || 20}</div>
+              <div>Bad: {sessionResults?.drum?.bad || 5}</div>
+              <div>Miss: {sessionResults?.drum?.miss || 2}</div>
             </div>
           </div>
 
@@ -158,8 +161,11 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
               {sessionResults?.guitar?.accuracy || '92%'}
             </div>
-            <div style={{ fontSize: '1.2rem', color: '#ccc' }}>
-              Perfect: {sessionResults?.guitar?.perfect || 120}
+            <div style={{ fontSize: '1rem', color: '#ccc', lineHeight: '1.5' }}>
+              <div>Perfect: {sessionResults?.guitar?.perfect || 120}</div>
+              <div>Good: {sessionResults?.guitar?.good || 15}</div>
+              <div>Bad: {sessionResults?.guitar?.bad || 8}</div>
+              <div>Miss: {sessionResults?.guitar?.miss || 3}</div>
             </div>
           </div>
 
@@ -181,8 +187,11 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
               {sessionResults?.vocal?.accuracy || '88%'}
             </div>
-            <div style={{ fontSize: '1.2rem', color: '#ccc' }}>
-              Perfect: {sessionResults?.vocal?.perfect || 95}
+            <div style={{ fontSize: '1rem', color: '#ccc', lineHeight: '1.5' }}>
+              <div>Perfect: {sessionResults?.vocal?.perfect || 95}</div>
+              <div>Good: {sessionResults?.vocal?.good || 25}</div>
+              <div>Bad: {sessionResults?.vocal?.bad || 12}</div>
+              <div>Miss: {sessionResults?.vocal?.miss || 8}</div>
             </div>
           </div>
 
@@ -204,8 +213,11 @@ const Result = ({ songTitle, totalGrade, sessionResults, onHomeClick }) => {
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px' }}>
               {sessionResults?.piano?.accuracy || '96%'}
             </div>
-            <div style={{ fontSize: '1.2rem', color: '#ccc' }}>
-              Perfect: {sessionResults?.piano?.perfect || 180}
+            <div style={{ fontSize: '1rem', color: '#ccc', lineHeight: '1.5' }}>
+              <div>Perfect: {sessionResults?.piano?.perfect || 180}</div>
+              <div>Good: {sessionResults?.piano?.good || 18}</div>
+              <div>Bad: {sessionResults?.piano?.bad || 4}</div>
+              <div>Miss: {sessionResults?.piano?.miss || 1}</div>
             </div>
           </div>
         </div>

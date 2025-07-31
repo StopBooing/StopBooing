@@ -14,7 +14,7 @@ export const GAME_CONFIG = {
   
   // 노트 크기 설정
   NOTE: {
-    WIDTH_RATIO: 0.8, // 레인 간격 대비 노트 너비 비율
+    WIDTH_RATIO: 1, // 레인 간격 대비 노트 너비 비율
     TAP_HEIGHT: 25, // 탭 노트 높이
     HOLD_MIN_HEIGHT: 25, // 홀드 노트 최소 높이
     HOLD_END_HEIGHT: 8, // 홀드 노트 끝 부분 높이

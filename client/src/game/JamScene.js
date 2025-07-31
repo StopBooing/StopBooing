@@ -54,17 +54,25 @@ export default class JamScene extends Phaser.Scene {
   }
 
   create() {
-    // Deemo 스타일: 밝은 흰색 계열 배경
-    this.cameras.main.setBackgroundColor('#f7f6f3');
+    console.log('JamScene create() 시작');
+    
+    // 세션별 그라데이션 배경 설정
+    this.setupSessionBackground();
     this.myInstrumentName = this.game.registry.get('myInstrument');
+    console.log('myInstrumentName:', this.myInstrumentName);
     
     // SPAWN_Y는 카메라 높이에 의존하므로 create에서 계산
-    this.SPAWN_Y = 0;
+    this.SPAWN_Y = 50; // 화면 상단에서 50px 아래에서 시작
     this.HIT_LINE_Y = this.cameras.main.height - GAME_CONFIG.HIT_LINE_OFFSET;
     
     // SongManager를 통해 곡 데이터 로드하고 NoteBlock 인스턴스로 변환
     const noteData = this.songManager.getSongData(this.myInstrumentName);
+    console.log('로드된 노트 데이터:', noteData.length, '개');
     this.noteBlocks = noteData.map(data => new NoteBlock(data));
+    console.log('NoteBlock 인스턴스 생성 완료:', this.noteBlocks.length, '개');
+    
+    // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
+    this.previewTimeSec = 1; // 1초 동안 화면을 이동
     
     // noteSpeed 계산은 previewTimeSec과 HIT_LINE_Y에 의존
     const travelDistance = this.HIT_LINE_Y - this.SPAWN_Y;
@@ -97,6 +105,11 @@ export default class JamScene extends Phaser.Scene {
     
     this.createSessionUI();
     this.setupKeyboardInput();
+    
+    // 카운트다운 시작
+    console.log('카운트다운 시작 호출');
+    this.startCountdown();
+    console.log('JamScene create() 완료');
   }
 
   initAudio() {
@@ -116,50 +129,64 @@ export default class JamScene extends Phaser.Scene {
   }
 
   createSessionUI() {
-    // 세션 이름 매핑
-    const sessionMapping = {
-      'keyboard': 'piano',
-      'guitar': 'guitar', 
-      'drum': 'drum',
-      'vocal': 'vocal'
-    };
+    // 세션 표시 영역 추가
+    this.createSessionDisplayArea();
+  }
 
-    this.sessionType = sessionMapping[this.myInstrumentName] || 'piano';
+  createSessionDisplayArea() {
+    // 세션 표시 영역 배경
+    const areaX = this.cameras.main.width / 2;
+    const areaY = 30; // 상단에서 30px 아래
+  
+    // 세션 이름 텍스트 (LED 스타일)
+    const sessionName = this.myInstrumentName ? this.myInstrumentName.toUpperCase() : 'PIANO';
+    this.sessionNameText = this.add.text(areaX, areaY + 15, sessionName, {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontWeight: 'bold',
+      stroke: '#00ffff',
+      strokeThickness: 2,
+      shadow: {
+        offsetX: 0,
+        offsetY: 0,
+        color: '#00ffff',
+        blur: 10,
+        fill: true
+      }
+    }).setOrigin(0.5, 0);
     
-    // 세션별 UI 표시
-    const sessionNames = {
-      'piano': '피아노',
-      'drum': '드럼', 
-      'guitar': '일렉기타',
-      'vocal': '보컬'
-    };
+    // LED 글로우 애니메이션 추가
+    this.tweens.add({
+      targets: this.sessionNameText,
+      alpha: 0.7,
+      duration: 1000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    // 세션별 색상에 맞는 글로우 효과
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const sessionColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
+    
+    // 색상별 글로우 효과 적용
+    this.sessionNameText.setShadow(0, 0, sessionColorHex, 15, true);
+    this.sessionNameText.setStroke(sessionColorHex, 3);
+  }
 
-    const displayName = sessionNames[this.sessionType] || this.sessionType;
-    
-    // 세션별 UI 표시
-    this.add.text(400, 50, `${displayName} 세션`, { fontSize: '32px' }).setOrigin(0.5);
-    
-    // 세션별 색상 안내
-    const sessionColors = SESSION_COLORS[this.sessionType] || SESSION_COLORS.piano;
-    const sessionColorHex = '#' + sessionColors.TAP.toString(16).padStart(6, '0');
-    
-    this.sessionColorText = this.add.text(400, 90, `Your Color: ${sessionColorHex}`, {
-      fontSize: '18px',
-      color: sessionColorHex,
-      backgroundColor: '#000',
-      padding: { x: 10, y: 5 }
-    }).setOrigin(0.5);
-    
-    // 협동 게임 안내
-    this.coopText = this.add.text(400, 120, `Hit only ${this.sessionType} notes!`, {
-      fontSize: '16px',
-      color: '#ffff00',
-      backgroundColor: '#000',
-      padding: { x: 10, y: 5 }
-    }).setOrigin(0.5);
-    
-    // 카운트다운 시작
-    this.startCountdown();
+  getSessionDescription(sessionType) {
+    switch (sessionType) {
+      case 'piano':
+        return 'Piano Session';
+      case 'guitar':
+        return 'Guitar Session';
+      case 'drum':
+        return 'Drum Session';
+      case 'vocal':
+        return 'Vocal Session';
+      default:
+        return 'Piano Session';
+    }
   }
 
   setupTimingGuideUI() {
@@ -167,7 +194,11 @@ export default class JamScene extends Phaser.Scene {
     this.RHYTHM_GAME_LEFT = 0;
     this.RHYTHM_GAME_RIGHT = this.cameras.main.width;
     this.HIT_LINE_Y = this.cameras.main.height - 150;
-    this.SPAWN_Y = 0;
+    this.SPAWN_Y = 50; // 화면 상단에서 50px 아래에서 시작
+    
+    // 디버깅: 게임 영역 크기 출력
+    console.log(`게임 영역 크기: ${this.cameras.main.width} x ${this.cameras.main.height}`);
+    console.log(`게임 영역: LEFT=${this.RHYTHM_GAME_LEFT}, RIGHT=${this.RHYTHM_GAME_RIGHT}, SPAWN_Y=${this.SPAWN_Y}, HIT_LINE_Y=${this.HIT_LINE_Y}`);
     this.noteSpeed = 0;
     const gameWidth = this.RHYTHM_GAME_RIGHT - this.RHYTHM_GAME_LEFT;
     const laneSpacing = gameWidth / GAME_CONFIG.LANE_COUNT;
@@ -186,28 +217,51 @@ export default class JamScene extends Phaser.Scene {
     this.lane6X = this.RHYTHM_GAME_LEFT + laneSpacing * 5.5;
     this.lane7X = this.RHYTHM_GAME_LEFT + laneSpacing * 6.5;
     this.lane8X = this.RHYTHM_GAME_LEFT + laneSpacing * 7.5;
-    // 기준선 (수평선) - 더 굵고 명확하게 표시
-    // 1. 검정색 굵은 선
-    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0x000000, 1)
+    // 기준선 (수평선) - LED 스타일로 빛나는 효과
+    // 1. 흰색 굵은 선 (글로우 효과)
+    const thickLine = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 1)
       .setOrigin(0)
-      .setLineWidth(8);
-    // 2. 노란색 얇은 선(겹쳐서 강조)
-    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffeb3b, 1)
+      .setLineWidth(8)
+      .setDepth(2000); // 높은 우선순위
+    
+    // 글로우 효과를 위한 추가 선들
+    const glowLine1 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.6)
       .setOrigin(0)
-      .setLineWidth(3);
+      .setLineWidth(12)
+      .setDepth(1999);
+    
+    const glowLine2 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.3)
+      .setOrigin(0)
+      .setLineWidth(16)
+      .setDepth(1998);
+    
+    const glowLine3 = this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 0.1)
+      .setOrigin(0)
+      .setLineWidth(20)
+      .setDepth(1997);
+    
+    // 2. 흰색 얇은 선(겹쳐서 강조)
+    this.add.line(0, 0, this.RHYTHM_GAME_LEFT, this.HIT_LINE_Y, this.RHYTHM_GAME_RIGHT, this.HIT_LINE_Y, 0xffffff, 1)
+      .setOrigin(0)
+      .setLineWidth(3)
+      .setDepth(2000); // 높은 우선순위
+    
+    // 노트 시각적 요소들을 그룹화
     this.noteVisualsGroup = this.add.group();
-    // 7개의 보조선(세로선) - 연한 회색
-    const guideLineXPositions = [
-      this.guideLine1X, this.guideLine2X, this.guideLine3X, this.guideLine4X,
-      this.guideLine5X, this.guideLine6X, this.guideLine7X
-    ];
-    guideLineXPositions.forEach(x => {
-      this.add.line(
-        0, 0,
-        x, this.SPAWN_Y, x, this.HIT_LINE_Y,
-        0xd6d3ce, 0.5
-      ).setOrigin(0);
-    });
+    
+    // 7개의 보조선(세로선) - 어두운 색상보다 살짝 연한 색
+    // const guideLineXPositions = [
+    //   this.guideLine1X, this.guideLine2X, this.guideLine3X, this.guideLine4X,
+    //   this.guideLine5X, this.guideLine6X, this.guideLine7X
+    // ];
+    // guideLineXPositions.forEach(x => {
+    //   this.add.line(
+    //     0, 0,
+    //     x, this.SPAWN_Y, x, this.HIT_LINE_Y,
+    //     0x212026, 0.8  // 0x18171c보다 살짝 연한 색상
+    //   ).setOrigin(0)
+    //    .setDepth(1000); // 낮은 우선순위
+    // });
     // 키 입력 표시 등 나머지 로직은 그대로
     this.keyPressIndicators = {};
     const laneKeys = this.songManager.getLaneKeys(this.myInstrumentName);
@@ -228,6 +282,56 @@ export default class JamScene extends Phaser.Scene {
     }
   }
 
+  setupSessionBackground() {
+    // 세션별 색상 가져오기
+    const sessionColor = SESSION_COLORS[this.myInstrumentName]?.TAP || SESSION_COLORS.piano.TAP;
+    const backgroundColorHex = '#' + sessionColor.toString(16).padStart(6, '0');
+    
+    // 세션별 매우 연한 색상 계산
+    const getVeryLightColor = (color) => {
+      // 16진수 색상을 RGB로 변환
+      const r = (color >> 16) & 255;
+      const g = (color >> 8) & 255;
+      const b = color & 255;
+      
+      // 연한 색상으로 변환 (밝기 증가)
+      const lighterR = Math.min(255, r + 120);
+      const lighterG = Math.min(255, g + 120);
+      const lighterB = Math.min(255, b + 120);
+      
+      return (lighterR << 16) | (lighterG << 8) | lighterB;
+    };
+    
+    // 피아노 세션일 때는 더 연한 초록색 사용
+    let veryLightSessionColor;
+    if (this.myInstrumentName === 'piano') {
+      // 피아노용 더 연한 초록색 (0x88cc88)
+      veryLightSessionColor = 0x98d198;
+    } else {
+      veryLightSessionColor = getVeryLightColor(sessionColor);
+    }
+    
+    // 그라데이션 배경 생성
+    const graphics = this.add.graphics();
+    const height = this.cameras.main.height;
+    const halfHeight = height / 2;
+    
+    // 상단 절반: 어두운 검정
+    graphics.fillStyle(0x18171c);
+    graphics.fillRect(0, 0, this.cameras.main.width, halfHeight);
+    
+    // 하단 절반: 연한 그라데이션 (어두운 검정에서 연한 세션 색상으로)
+    graphics.fillGradientStyle(
+      0x18171c, // 시작 색상 (어두운 검정)
+      0x18171c, // 시작 색상 (어두운 검정)
+      veryLightSessionColor, // 끝 색상 (연한 세션 색상)
+      veryLightSessionColor, // 끝 색상 (연한 세션 색상)
+      0.6 // 알파값 (더 진하게)
+    );
+    graphics.fillRect(0, halfHeight, this.cameras.main.width, halfHeight);
+    graphics.setDepth(-1000); // 가장 뒤로 보내기
+  }
+
   startSongTracker() {
     // 게임 시작 시간 기록
     this.gameStartTime = performance.now();
@@ -237,8 +341,7 @@ export default class JamScene extends Phaser.Scene {
     const bpm = 120;
     this.barDuration = 60 / bpm * 4; // 4박자 = 2초
 
-    // 노트가 화면을 가로질러 이동하는 시간을 설정합니다.
-    this.previewTimeSec = 1; // 1초 동안 화면을 이동
+    // 노트 속도 재계산
     const travelDistance = this.HIT_LINE_Y - this.SPAWN_Y;
     this.noteSpeed = travelDistance / this.previewTimeSec;
 
@@ -342,8 +445,17 @@ export default class JamScene extends Phaser.Scene {
     const tapColor = SESSION_COLORS[noteBlock.sessionType]?.TAP || SESSION_COLORS.piano.TAP;
     visualBlock = this.add.rectangle(0, 0, baseWidth, blockHeight, tapColor).setOrigin(0.5, 0);
     
+    // 디버깅: 노트 블럭 정보 출력
+    console.log(`Creating note block: x=${xPos}, y=${this.SPAWN_Y}, width=${baseWidth}, height=${blockHeight}, color=${tapColor.toString(16)}`);
+    console.log(`Note block session: ${noteBlock.sessionType}, key: ${noteBlock.key}, lane: ${noteBlock.lane}`);
+    
     noteBlock.blockHeight = blockHeight;
     const container = this.add.container(xPos, this.SPAWN_Y, [visualBlock]);
+    container.setDepth(3000); // 노트 블럭을 가장 높은 우선순위로 설정
+    
+    // 디버깅: 컨테이너 정보 출력
+    console.log(`Container created: x=${container.x}, y=${container.y}, depth=${container.depth}, visible=${container.visible}`);
+    
     this.noteVisualsGroup.add(container);
     return container;
   }
